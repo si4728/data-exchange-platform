@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>접속 이력</h1>
+  <p class="muted">로그인 성공, 로그인 실패, 로그아웃 이력을 IP와 브라우저 정보 기준으로 확인합니다.</p>
+
+  <section class="panel">
+    <form method="get">
+      <div class="grid">
+        <div>
+          <label for="q">검색</label>
+          <input id="q" name="q" type="search" value="{{ filters.query }}" placeholder="이메일, 이름, IP, 브라우저">
+        </div>
+        <div>
+          <label for="event_type">이벤트</label>
+          <select id="event_type" name="event_type">
+            <option value="">전체</option>
+            {% for event_type in ["LOGIN_SUCCESS", "LOGIN_FAIL", "LOGOUT"] %}
+              <option value="{{ event_type }}" {% if filters.event_type == event_type %}selected{% endif %}>{{ event_type }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label for="user_id">사용자 ID</label>
+          <input id="user_id" name="user_id" type="number" min="1" value="{{ filters.user_id or '' }}">
+        </div>
+        <div>
+          <label for="limit">표시 개수</label>
+          <input id="limit" name="limit" type="number" min="1" max="500" value="{{ filters.limit }}">
+        </div>
+      </div>
+      <div class="actions">
+        <button type="submit">검색</button>
+        <a class="button secondary" href="{{ url_for('web_admin_access_logs') }}">초기화</a>
+      </div>
+    </form>
+  </section>
+
+  <section class="section-spaced">
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>시간</th>
+          <th>이벤트</th>
+          <th>사용자</th>
+          <th>실패 사유</th>
+          <th>IP</th>
+          <th>User-Agent</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for log in access_logs %}
+          <tr>
+            <td>{{ log.id }}</td>
+            <td>{{ log.created_at }}</td>
+            <td><span class="status {{ 'rejected' if log.event_type == 'LOGIN_FAIL' else 'active' }}">{{ log.event_type }}</span></td>
+            <td>
+              {{ log.user_name or "-" }}
+              <br>
+              <span class="muted">{{ log.email or "" }}</span>
+              {% if log.user_role %}
+                <br><span class="muted">{{ log.user_role }}</span>
+              {% endif %}
+            </td>
+            <td>{{ log.failure_reason or "-" }}</td>
+            <td>{{ log.ip_address or "-" }}</td>
+            <td><code>{{ log.user_agent or "-" }}</code></td>
+          </tr>
+        {% else %}
+          <tr>
+            <td colspan="7" class="muted">조건에 맞는 접속 이력이 없습니다.</td>
+          </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </section>
+{% endblock %}

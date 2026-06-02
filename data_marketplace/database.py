@@ -18,6 +18,7 @@ SCHEMA_MIGRATIONS = (
     ("0009_admin_csv_exports", "Admin operational CSV report exports"),
     ("0010_dataset_resubmissions", "Seller rejected dataset resubmission tracking"),
     ("0011_payment_gateway_preparation", "Payment provider reference fields and event log"),
+    ("0012_access_logs", "User login, logout, and failed access history"),
 )
 
 
@@ -186,6 +187,17 @@ def init_db(db_path: str | Path = DATABASE_PATH) -> None:
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP
             );
 
+            CREATE TABLE IF NOT EXISTS access_logs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                email TEXT,
+                event_type TEXT,
+                failure_reason TEXT,
+                ip_address TEXT,
+                user_agent TEXT,
+                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+            );
+
             CREATE TABLE IF NOT EXISTS notifications (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
                 recipient_user_id INTEGER,
@@ -249,6 +261,15 @@ def init_db(db_path: str | Path = DATABASE_PATH) -> None:
         )
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_audit_logs_action ON audit_logs(action)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_access_logs_created_at ON access_logs(created_at)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_access_logs_user ON access_logs(user_id, created_at)"
+        )
+        connection.execute(
+            "CREATE INDEX IF NOT EXISTS idx_access_logs_event ON access_logs(event_type, created_at)"
         )
         connection.execute(
             "CREATE INDEX IF NOT EXISTS idx_notifications_recipient ON notifications(recipient_user_id, read_at)"
@@ -2426,6 +2447,94 @@ def record_audit_log(
                 ip_address,
             ),
         )
+
+
+def record_access_log(
+    user_id: int | None,
+    email: str,
+    event_type: str,
+    failure_reason: str = "",
+    ip_address: str = "",
+    user_agent: str = "",
+    db_path: str | Path = DATABASE_PATH,
+) -> None:
+    init_db(db_path)
+    with get_connection(db_path) as connection:
+        connection.execute(
+            """
+            INSERT INTO access_logs (
+                user_id,
+                email,
+                event_type,
+                failure_reason,
+                ip_address,
+                user_agent
+            )
+            VALUES (?, ?, ?, ?, ?, ?)
+            """,
+            (
+                user_id,
+                email,
+                event_type,
+                failure_reason,
+                ip_address,
+                user_agent,
+            ),
+        )
+
+
+def list_access_logs(
+    query: str = "",
+    event_type: str | None = None,
+    user_id: int | None = None,
+    limit: int = 100,
+    db_path: str | Path = DATABASE_PATH,
+) -> list[dict[str, Any]]:
+    init_db(db_path)
+    limit = max(1, min(int(limit or 100), 500))
+    clauses: list[str] = []
+    params: list[Any] = []
+
+    if event_type:
+        clauses.append("access_logs.event_type = ?")
+        params.append(event_type)
+    if user_id:
+        clauses.append("access_logs.user_id = ?")
+        params.append(user_id)
+    if query:
+        like = f"%{query}%"
+        clauses.append(
+            """
+            (
+                access_logs.email LIKE ?
+                OR access_logs.event_type LIKE ?
+                OR access_logs.failure_reason LIKE ?
+                OR access_logs.ip_address LIKE ?
+                OR access_logs.user_agent LIKE ?
+                OR users.name LIKE ?
+            )
+            """
+        )
+        params.extend([like, like, like, like, like, like])
+
+    where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
+    with get_connection(db_path) as connection:
+        rows = connection.execute(
+            f"""
+            SELECT
+                access_logs.*,
+                users.name AS user_name,
+                users.role AS user_role
+            FROM access_logs
+            LEFT JOIN users ON users.id = access_logs.user_id
+            {where_clause}
+            ORDER BY access_logs.id DESC
+            LIMIT ?
+            """,
+            [*params, limit],
+        ).fetchall()
+
+    return [dict(row) for row in rows]
 
 
 def list_audit_logs(

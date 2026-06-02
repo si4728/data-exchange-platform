@@ -23,6 +23,7 @@ from data_marketplace.database import (
     get_product,
     get_purchase_request,
     get_user_by_email,
+    list_access_logs,
     update_report_json,
     update_order_payment_status,
     update_product,
@@ -90,6 +91,32 @@ def main() -> None:
         raise AssertionError("order was not created")
 
     client = app.test_client()
+
+    with client.session_transaction() as session:
+        session["csrf_token"] = "access-log-token"
+    failed_login = client.post(
+        "/login",
+        data={"email": buyer["email"], "password": "wrong-password", "csrf_token": "access-log-token"},
+    )
+    if failed_login.status_code != 401:
+        raise AssertionError(f"failed login should return 401, got {failed_login.status_code}")
+    with client.session_transaction() as session:
+        session["csrf_token"] = "access-log-token"
+    successful_login = client.post(
+        "/login",
+        data={"email": buyer["email"], "password": "test1234", "csrf_token": "access-log-token"},
+    )
+    if successful_login.status_code not in {302, 308}:
+        raise AssertionError(f"successful login should redirect, got {successful_login.status_code}")
+    with client.session_transaction() as session:
+        session["csrf_token"] = "access-log-token"
+    logout_response = client.post("/logout", data={"csrf_token": "access-log-token"})
+    if logout_response.status_code not in {302, 308}:
+        raise AssertionError(f"logout should redirect, got {logout_response.status_code}")
+    buyer_access_events = [log["event_type"] for log in list_access_logs(user_id=buyer["id"], limit=10)]
+    for expected_event in ["LOGIN_SUCCESS", "LOGIN_FAIL", "LOGOUT"]:
+        if expected_event not in buyer_access_events:
+            raise AssertionError(f"missing access log event {expected_event}: {buyer_access_events}")
 
     anonymous_csv = client.get("/web/admin/reports/orders.csv")
     if anonymous_csv.status_code not in {302, 308}:

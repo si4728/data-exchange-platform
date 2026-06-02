@@ -62,6 +62,7 @@ from data_marketplace.database import (
     list_api_usage_logs,
     list_audit_logs,
     list_api_keys,
+    list_access_logs,
     list_download_logs,
     list_notifications,
     list_orders,
@@ -80,6 +81,7 @@ from data_marketplace.database import (
     get_seller_revenue_summary,
     sync_approved_datasets_to_products,
     record_api_usage,
+    record_access_log,
     record_audit_log,
     record_download_log,
     record_processing_step,
@@ -260,12 +262,20 @@ def login_post():
     user = get_user_by_email(email)
 
     if not user or not check_password_hash(user["password_hash"], password):
+        _record_access(
+            user["id"] if user else None,
+            email,
+            "LOGIN_FAIL",
+            "INVALID_CREDENTIALS",
+        )
         return render_template("login.html", error="이메일 또는 비밀번호가 올바르지 않습니다."), 401
     if user["status"] != "ACTIVE":
+        _record_access(user["id"], email, "LOGIN_FAIL", f"ACCOUNT_{user['status']}")
         return render_template("login.html", error="활성화되지 않은 계정입니다."), 403
 
     session.clear()
     session["user_id"] = user["id"]
+    _record_access(user["id"], user["email"], "LOGIN_SUCCESS")
     if user["role"] == "ADMIN":
         return redirect(url_for("web_admin_dashboard"))
     return redirect(url_for("user_dashboard"))
@@ -273,6 +283,9 @@ def login_post():
 
 @app.post("/logout")
 def logout():
+    user = current_user()
+    if user:
+        _record_access(user["id"], user["email"], "LOGOUT")
     session.clear()
     return redirect(url_for("login"))
 
@@ -950,6 +963,17 @@ def web_admin_audit_logs():
     )
 
 
+@app.get("/web/admin/access-logs")
+@admin_required
+def web_admin_access_logs():
+    filters = _get_access_log_filters()
+    return render_template(
+        "admin_access_logs.html",
+        access_logs=list_access_logs(**filters),
+        filters=filters,
+    )
+
+
 @app.post("/web/notifications/<int:notification_id>/read")
 @login_required
 def web_mark_notification_read(notification_id):
@@ -1438,6 +1462,15 @@ def _get_audit_log_filters():
     }
 
 
+def _get_access_log_filters():
+    return {
+        "query": request.args.get("q", "").strip(),
+        "event_type": request.args.get("event_type", "").strip() or None,
+        "user_id": _parse_int_arg("user_id"),
+        "limit": _parse_int_arg("limit", default=200) or 200,
+    }
+
+
 def _admin_report_definitions(fee_rate):
     return {
         "datasets": {
@@ -1852,6 +1885,17 @@ def _record_audit(action, target_type, target_id=None, detail=None):
         target_id=target_id,
         detail=detail or {},
         ip_address=request.remote_addr or "",
+    )
+
+
+def _record_access(user_id, email, event_type, failure_reason=""):
+    record_access_log(
+        user_id=user_id,
+        email=email or "",
+        event_type=event_type,
+        failure_reason=failure_reason,
+        ip_address=request.remote_addr or "",
+        user_agent=(request.user_agent.string or "")[:500],
     )
 
 

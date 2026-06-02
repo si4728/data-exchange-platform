@@ -85,7 +85,7 @@ def main() -> None:
     for path in user_paths:
         assert_get(client, path, 200)
 
-    for path in ["/web/admin", "/web/admin/datasets", "/web/admin/products", "/web/admin/purchases", "/web/admin/settlements", "/web/admin/operations-checklist", "/web/admin/database-backup.sqlite", "/web/admin/reports/orders.csv"]:
+    for path in ["/web/admin", "/web/admin/datasets", "/web/admin/products", "/web/admin/purchases", "/web/admin/settlements", "/web/admin/operations-checklist", "/web/admin/database-backup.sqlite", "/web/admin/reports/orders.csv", "/web/admin/access-logs"]:
         assert_get(client, path, 403)
 
     login_as(client, admin["id"])
@@ -102,6 +102,7 @@ def main() -> None:
         "/web/admin/downloads",
         "/web/admin/api-usage",
         "/web/admin/api-keys",
+        "/web/admin/access-logs",
         "/web/admin/audit-logs",
     ]
     for path in admin_paths:

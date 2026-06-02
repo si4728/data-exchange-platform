@@ -46,6 +46,7 @@ def main() -> None:
         "api_keys",
         "api_usage_logs",
         "audit_logs",
+        "access_logs",
         "notifications",
         "dataset_processing_steps",
         "product_favorites",
@@ -77,6 +78,7 @@ def main() -> None:
             "canceled_at",
         },
         "payment_events": {"order_id", "event_type", "payment_status", "provider", "provider_reference", "detail_json"},
+        "access_logs": {"user_id", "email", "event_type", "failure_reason", "ip_address", "user_agent", "created_at"},
         "api_keys": {"total_request_limit", "monthly_request_limit"},
         "schema_migrations": {"version", "description", "applied_at"},
     }
@@ -87,7 +89,7 @@ def main() -> None:
 
     migrations = list_schema_migrations(db_path)
     status = get_schema_status(db_path)
-    if len(migrations) < 11:
+    if len(migrations) < 12:
         raise AssertionError(f"migration records are missing: {migrations}")
     if not status["is_current"]:
         raise AssertionError(status)
