@@ -24,10 +24,22 @@ Preferred compile check:
 python -m compileall app.py data_marketplace tests
 ```
 
+Preferred full regression command:
+
+```powershell
+.\scripts\run_regression.ps1
+```
+
+If local PowerShell script execution is restricted, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_regression.ps1
+```
+
 If `python` is not on PATH in Codex desktop, use:
 
 ```powershell
-& 'C:\Users\82108\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' -m compileall app.py data_marketplace tests
+.\scripts\run_regression.ps1 -Python 'C:\Users\82108\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe'
 ```
 
 For behavior changes, run the focused regression test in `tests/` plus any adjacent tests listed in `TESTING.md`.

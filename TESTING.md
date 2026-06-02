@@ -32,6 +32,24 @@ python tests\admin_csv_export_test.py
 python tests\security_regression_test.py
 ```
 
+Or run the same compile check and full regression list with:
+
+```powershell
+.\scripts\run_regression.ps1
+```
+
+If local PowerShell script execution is restricted, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_regression.ps1
+```
+
+If `python` is not on PATH, pass an explicit runtime:
+
+```powershell
+.\scripts\run_regression.ps1 -Python "C:\Users\82108\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe"
+```
+
 Expected pass markers:
 
 - `SMOKE_TEST_PASS`

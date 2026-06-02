@@ -51,6 +51,18 @@ If `python` is not on PATH in the local Codex desktop environment, use the bundl
 C:\Users\82108\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe
 ```
 
+## Environment
+
+Copy `.env.example` values into your shell environment before production-like testing. The app reads environment variables through `os.getenv`; it does not load `.env` files automatically.
+
+PowerShell example:
+
+```powershell
+$env:FLASK_SECRET_KEY="replace-with-a-long-random-secret"
+$env:ADMIN_EMAIL="admin@example.com"
+$env:ADMIN_PASSWORD="replace-this-before-release"
+```
+
 ## Run Locally
 
 From the project root:
@@ -98,12 +110,22 @@ Compile check:
 python -m compileall app.py data_marketplace tests
 ```
 
-Run the full regression suite listed in `TESTING.md`.
-
-In the current Codex desktop environment, the full suite has passed with the bundled Python runtime. If `python` is unavailable, run tests with:
+Run the full regression suite listed in `TESTING.md`, or use the PowerShell runner:
 
 ```powershell
-& 'C:\Users\82108\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe' tests\smoke_test.py
+.\scripts\run_regression.ps1
+```
+
+If local PowerShell script execution is restricted, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_regression.ps1
+```
+
+If `python` is unavailable, pass the bundled runtime:
+
+```powershell
+.\scripts\run_regression.ps1 -Python 'C:\Users\82108\.cache\codex-runtimes\codex-primary-runtime\dependencies\python\python.exe'
 ```
 
 ## Storage And Retention

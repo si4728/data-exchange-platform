@@ -8,6 +8,7 @@ This checklist is the first release-stabilization baseline for OBDM.
 - Rotate the default admin bootstrap credentials:
   - `ADMIN_EMAIL`
   - `ADMIN_PASSWORD`
+- Use `.env.example` as a reference only; the app reads process environment variables and does not load `.env` automatically.
 - Keep the current DBMS as SQLite for now:
   - `database/marketplace.db`
 - Confirm the Flask app starts and `/health` returns `200`.
@@ -78,6 +79,18 @@ python tests\route_access_test.py
 python tests\ui_text_smoke_test.py
 python tests\schema_migration_test.py
 python tests\security_regression_test.py
+```
+
+For a full local pass, run:
+
+```powershell
+.\scripts\run_regression.ps1
+```
+
+If local PowerShell script execution is restricted, run:
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\scripts\run_regression.ps1
 ```
 
 Full regression criteria remain documented in `TESTING.md`.
