@@ -20,6 +20,7 @@ from data_marketplace.config import (
     DELETE_UPLOADED_FILES_AFTER_PROCESSING,
     KEEP_NORMALIZED_DATA,
     KEEP_SAMPLES,
+    MAX_UPLOAD_BYTES,
     REPORT_DIR,
     SAMPLE_DIR,
     SAMPLE_SIZE,
@@ -101,6 +102,10 @@ from data_marketplace.services import validate_dataset
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "dev-secret-change-me")
+app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_UPLOAD_BYTES", MAX_UPLOAD_BYTES))
+app.config["SESSION_COOKIE_HTTPONLY"] = True
+app.config["SESSION_COOKIE_SAMESITE"] = os.getenv("SESSION_COOKIE_SAMESITE", "Lax")
+app.config["SESSION_COOKIE_SECURE"] = os.getenv("SESSION_COOKIE_SECURE", "").strip().lower() in {"1", "true", "yes"}
 
 UPLOAD_JOBS: dict[str, dict] = {}
 UPLOAD_JOBS_LOCK = threading.Lock()
@@ -1881,7 +1886,13 @@ def _get_sample_path(product):
     sample_path = Path(sample.get("sample_path", ""))
     if not sample_path.is_absolute():
         sample_path = Path.cwd() / sample_path
-    return sample_path
+    try:
+        resolved_path = sample_path.resolve()
+        sample_root = SAMPLE_DIR.resolve()
+        resolved_path.relative_to(sample_root)
+    except (OSError, ValueError):
+        return None
+    return resolved_path
 
 
 def _load_sample_preview(product, limit=5):

@@ -19,9 +19,11 @@ from data_marketplace.database import (
     create_order_for_purchase,
     create_purchase_request,
     create_user,
+    get_dataset_report,
     get_product,
     get_purchase_request,
     get_user_by_email,
+    update_report_json,
     update_order_payment_status,
     update_product,
     update_purchase_request_status,
@@ -41,6 +43,12 @@ def main() -> None:
     seller = get_user_by_email(seed["seller_email"])
     if admin is None or seller is None:
         raise AssertionError("required accounts are missing")
+    if not app.config.get("MAX_CONTENT_LENGTH"):
+        raise AssertionError("MAX_CONTENT_LENGTH should be configured")
+    if app.config.get("SESSION_COOKIE_HTTPONLY") is not True:
+        raise AssertionError("session cookies should be HTTP only")
+    if app.config.get("SESSION_COOKIE_SAMESITE") not in {"Lax", "Strict"}:
+        raise AssertionError("session cookies should have a SameSite policy")
 
     product = get_product(seed["product_id"], include_inactive=True)
     if product is None:
@@ -133,6 +141,20 @@ def main() -> None:
     )
     if header_key_response.status_code != 200:
         raise AssertionError(f"header API key should work, got {header_key_response.status_code}")
+
+    original_report = get_dataset_report(product["dataset_id"])
+    if original_report is None:
+        raise AssertionError("demo report is missing")
+    tampered_report = dict(original_report)
+    tampered_sample = dict(tampered_report.get("sample") or {})
+    tampered_sample["sample_path"] = str(PROJECT_ROOT / "app.py")
+    tampered_report["sample"] = tampered_sample
+    update_report_json(product["dataset_id"], tampered_report)
+    login_as(client, admin["id"])
+    tampered_sample_response = client.get(f"/products/{product['id']}/sample")
+    update_report_json(product["dataset_id"], original_report)
+    if tampered_sample_response.status_code != 404:
+        raise AssertionError(f"sample path outside sample directory should be blocked, got {tampered_sample_response.status_code}")
 
     refreshed_purchase = get_purchase_request(purchase["id"])
     if refreshed_purchase is None or refreshed_purchase["buyer_id"] != buyer["id"]:
