@@ -24,7 +24,7 @@
         {% if resubmit_dataset %}
           <input type="hidden" name="parent_dataset_id" value="{{ resubmit_dataset.id }}">
 
-          <div class="notice" style="margin-top: 0">
+          <div class="notice flush">
             <strong>보완 재업로드</strong>
             <p>
               {{ resubmit_dataset.data_name or resubmit_dataset.filename }} 데이터의 반려 사유를 보완해 새 파일로 다시 제출합니다.

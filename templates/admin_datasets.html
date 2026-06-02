@@ -84,7 +84,7 @@
                 <div class="muted">{{ dataset.filename }}</div>
                 <div class="muted">{{ dataset.description or "설명 없음" }}</div>
                 {% if dataset.resubmission_parent %}
-                  <div class="tag-row" style="margin-top: 8px">
+                  <div class="tag-row mt-sm">
                     <span class="status review">보완 제출</span>
                     <a class="tag neutral" href="{{ url_for('web_dataset_report', dataset_id=dataset.resubmission_parent.id) }}">
                       원본 #{{ dataset.resubmission_parent.id }}
@@ -115,7 +115,7 @@
                   <span class="tag neutral">{{ dataset.review_recommendation }}</span>
                 </div>
 
-                <div class="muted" style="margin-top: 8px">
+                <div class="muted mt-sm">
                   평균 NULL {{ dataset.avg_null_rate if dataset.avg_null_rate is not none else "-" }}%
                   · PII 컬럼 {{ dataset.pii_column_count if dataset.pii_column_count is not none else "-" }}개
                   · 고결측 {{ dataset.high_null_column_count if dataset.high_null_column_count is not none else "-" }}개
@@ -144,7 +144,7 @@
                   </div>
                 {% endif %}
                 {% if dataset.resubmission_children %}
-                  <details style="margin-top: 8px">
+                  <details class="mt-sm">
                     <summary>후속 보완 제출</summary>
                     <ul class="compact-list">
                       {% for child in dataset.resubmission_children %}
@@ -160,13 +160,13 @@
               </td>
               <td><span class="status {{ dataset.status | lower }}">{{ dataset.status }}</span></td>
               <td>
-                <div class="actions" style="margin-top: 0">
-                  <form action="{{ url_for('web_admin_approve_dataset', dataset_id=dataset.id) }}" method="post" style="display:inline">
+                <div class="inline-actions">
+                  <form action="{{ url_for('web_admin_approve_dataset', dataset_id=dataset.id) }}" method="post" class="inline-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit">승인 및 게시</button>
                   </form>
                 </div>
-                <form action="{{ url_for('web_admin_reject_dataset', dataset_id=dataset.id) }}" method="post" style="margin-top: 8px">
+                <form action="{{ url_for('web_admin_reject_dataset', dataset_id=dataset.id) }}" method="post" class="mt-sm">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <label for="review_note_{{ dataset.id }}">반려 사유</label>
                   <textarea id="review_note_{{ dataset.id }}" name="review_note" rows="2" placeholder="반려 사유를 입력하세요">{{ dataset.review_note or "" }}</textarea>

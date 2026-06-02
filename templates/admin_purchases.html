@@ -63,11 +63,11 @@
               <td>{{ purchase.sample_download_limit or 0 }}회 한도</td>
               <td>{{ purchase.review_note or "" }}</td>
               <td>
-                <form action="{{ url_for('web_admin_approve_purchase', request_id=purchase.id) }}" method="post" style="display:inline">
+                <form action="{{ url_for('web_admin_approve_purchase', request_id=purchase.id) }}" method="post" class="inline-form">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <button type="submit">승인</button>
                 </form>
-                <form action="{{ url_for('web_admin_reject_purchase', request_id=purchase.id) }}" method="post" style="margin-top: 8px">
+                <form action="{{ url_for('web_admin_reject_purchase', request_id=purchase.id) }}" method="post" class="mt-sm">
                   <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                   <label for="purchase_review_note_{{ purchase.id }}">반려 사유</label>
                   <textarea id="purchase_review_note_{{ purchase.id }}" name="review_note" rows="2" placeholder="반려 사유를 입력하세요">{{ purchase.review_note or "" }}</textarea>

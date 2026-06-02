@@ -132,7 +132,7 @@
         </form>
 
         {% if order %}
-          <form action="{{ url_for('web_admin_update_order_payment_status', order_id=order.id) }}" method="post" style="margin-top: 16px">
+          <form action="{{ url_for('web_admin_update_order_payment_status', order_id=order.id) }}" method="post" class="mt-md">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <input type="hidden" name="next" value="{{ request.path }}">
             <label for="payment_status">결제 상태</label>
@@ -152,12 +152,12 @@
         {% endif %}
 
         <div class="actions">
-          <form action="{{ url_for('web_admin_approve_purchase', request_id=purchase.id) }}" method="post" style="display:inline">
+          <form action="{{ url_for('web_admin_approve_purchase', request_id=purchase.id) }}" method="post" class="inline-form">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
             <button type="submit">승인</button>
           </form>
         </div>
-        <form action="{{ url_for('web_admin_reject_purchase', request_id=purchase.id) }}" method="post" style="margin-top: 8px">
+        <form action="{{ url_for('web_admin_reject_purchase', request_id=purchase.id) }}" method="post" class="mt-sm">
           <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
           <label for="review_note">반려 사유</label>
           <textarea id="review_note" name="review_note" rows="3" placeholder="반려 사유를 입력하세요.">{{ purchase.review_note or "" }}</textarea>

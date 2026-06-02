@@ -24,11 +24,11 @@
           <td>{{ user.role }}</td>
           <td><span class="status {{ user.status | lower }}">{{ user.status }}</span></td>
           <td>
-            <form action="{{ url_for('web_admin_activate_user', user_id=user.id) }}" method="post" style="display:inline">
+            <form action="{{ url_for('web_admin_activate_user', user_id=user.id) }}" method="post" class="inline-form">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button type="submit">활성화</button>
             </form>
-            <form action="{{ url_for('web_admin_suspend_user', user_id=user.id) }}" method="post" style="display:inline">
+            <form action="{{ url_for('web_admin_suspend_user', user_id=user.id) }}" method="post" class="inline-form">
               <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
               <button class="danger" type="submit">정지</button>
             </form>

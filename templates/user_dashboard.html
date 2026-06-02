@@ -274,7 +274,7 @@
                   <span class="status {{ dataset.progress.badge_class }}">{{ dataset.progress.label }}</span>
                 </div>
                 <div class="progress-track" aria-label="데이터 게시 진행률">
-                  <span style="width: {{ dataset.progress.percent }}%"></span>
+                  <span class="progress-fill" style="--progress-width: {{ dataset.progress.percent }}%"></span>
                 </div>
                 <div class="muted">단계 {{ dataset.progress.stage }} / 4 · {{ dataset.progress.message }}</div>
                 <div class="muted">다음 행동: {{ dataset.progress.next_action }}</div>
@@ -338,12 +338,12 @@
                 <div class="inline-actions mt-sm">
                   <a class="button secondary" href="{{ url_for('web_edit_product', product_id=product.id) }}">상품 수정</a>
                   {% if product.status == "ACTIVE" %}
-                    <form action="{{ url_for('web_hide_product', product_id=product.id) }}" method="post" style="display:inline">
+                    <form action="{{ url_for('web_hide_product', product_id=product.id) }}" method="post" class="inline-form">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button class="danger" type="submit">비공개</button>
                     </form>
                   {% else %}
-                    <form action="{{ url_for('web_publish_product', product_id=product.id) }}" method="post" style="display:inline">
+                    <form action="{{ url_for('web_publish_product', product_id=product.id) }}" method="post" class="inline-form">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button type="submit">다시 게시</button>
                     </form>
@@ -391,7 +391,7 @@
                   {% if purchase.api_key_id %}
                     <code>{{ purchase.api_key_prefix }}...</code>
                     <div class="muted">호출: <code>/api/v1/products/{{ purchase.product_id }}/sample</code></div>
-                    <form action="{{ url_for('web_revoke_api_key', api_key_id=purchase.api_key_id) }}" method="post" style="margin-top: 8px">
+                    <form action="{{ url_for('web_revoke_api_key', api_key_id=purchase.api_key_id) }}" method="post" class="mt-sm">
                       <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                       <button class="danger" type="submit">API 키 비활성화</button>
                     </form>

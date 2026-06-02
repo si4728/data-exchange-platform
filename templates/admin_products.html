@@ -121,7 +121,7 @@
             <td>
               {% if product.category %}<span class="tag neutral">{{ product.category }}</span>{% endif %}
               {% if product.tags %}
-                <div class="tag-row" style="margin-top: 6px">
+                <div class="tag-row mt-xs">
                   {% for tag in product.tags.split(",")[:4] %}
                     <span class="tag neutral">{{ tag.strip() }}</span>
                   {% endfor %}
@@ -135,15 +135,15 @@
             <td>{{ product.price }}원</td>
             <td><span class="status {{ product.status | lower }}">{{ product.status }}</span></td>
             <td>
-              <div class="actions" style="margin-top:0">
+              <div class="inline-actions">
                 <a class="button secondary" href="{{ url_for('web_edit_product', product_id=product.id) }}">수정</a>
                 {% if product.status == "ACTIVE" %}
-                  <form action="{{ url_for('web_hide_product', product_id=product.id) }}" method="post" style="display:inline">
+                  <form action="{{ url_for('web_hide_product', product_id=product.id) }}" method="post" class="inline-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button class="danger" type="submit">비공개</button>
                   </form>
                 {% else %}
-                  <form action="{{ url_for('web_publish_product', product_id=product.id) }}" method="post" style="display:inline">
+                  <form action="{{ url_for('web_publish_product', product_id=product.id) }}" method="post" class="inline-form">
                     <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                     <button type="submit">다시 게시</button>
                   </form>
@@ -158,9 +158,9 @@
     </table>
 
     <section class="panel">
-      <div class="actions" style="justify-content: space-between; align-items: center; margin-top: 0">
+      <div class="section-header">
         <span class="muted">{{ pagination.page }} / {{ pagination.total_pages }} 페이지 · {{ pagination.total }}개 결과</span>
-        <div class="actions" style="margin-top: 0">
+        <div class="inline-actions">
           {% set prev_args = request.args.to_dict() %}
           {% set _ = prev_args.update({"page": pagination.page - 1}) %}
           {% set next_args = request.args.to_dict() %}

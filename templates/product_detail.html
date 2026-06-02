@@ -49,7 +49,7 @@
         </div>
 
         {% if product.report and product.report.schema and product.report.schema.columns %}
-          <section class="panel" style="margin-top: 18px">
+          <section class="panel section-spaced">
             <h2>컬럼 통계</h2>
             <table>
               <thead>
@@ -76,7 +76,7 @@
           </section>
         {% endif %}
 
-        <section class="panel" style="margin-top: 18px">
+        <section class="panel section-spaced">
           <h2>샘플 미리보기</h2>
           {% if sample_preview.rows %}
             <table>
@@ -102,7 +102,7 @@
           {% endif %}
         </section>
 
-        <section class="panel" style="margin-top: 18px">
+        <section class="panel section-spaced">
           <h2>라이선스 및 사용 조건</h2>
           <p><strong>{{ product.license_name or "Standard Data License" }}</strong></p>
           <p class="muted">{{ product.usage_terms or "구매 승인 후 내부 분석 목적으로 사용할 수 있으며, 원본 데이터 재판매와 개인정보 재식별 시도는 금지됩니다." }}</p>
@@ -120,7 +120,7 @@
           <span class="tag neutral">{{ "{:,}".format(product.price or 0) }}원</span>
         </div>
         {% if product.tags %}
-          <div class="tag-row" style="margin-top: 10px">
+          <div class="tag-row mt-sm">
             {% for tag in product.tags.split(",") %}
               <span class="tag neutral">{{ tag.strip() }}</span>
             {% endfor %}
@@ -138,12 +138,12 @@
           {% if current_user and (current_user.role == "ADMIN" or current_user.id == product.seller_id) %}
             <a class="button" href="{{ url_for('web_edit_product', product_id=product.id) }}">상품 수정</a>
             {% if product.status == "ACTIVE" %}
-              <form action="{{ url_for('web_hide_product', product_id=product.id) }}" method="post" style="display:inline">
+              <form action="{{ url_for('web_hide_product', product_id=product.id) }}" method="post" class="inline-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button class="danger" type="submit">비공개</button>
               </form>
             {% else %}
-              <form action="{{ url_for('web_publish_product', product_id=product.id) }}" method="post" style="display:inline">
+              <form action="{{ url_for('web_publish_product', product_id=product.id) }}" method="post" class="inline-form">
                 <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
                 <button type="submit">다시 게시</button>
               </form>
