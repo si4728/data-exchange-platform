@@ -2,6 +2,7 @@
 
 {% block content %}
   {% set summary = report.review_summary or {} %}
+  {% set estimated_price = "45,000원 ~ 150,000원" if report.quality.grade == "A+" else "20,000원 ~ 80,000원" if report.quality.grade == "A" else "10,000원 ~ 30,000원" if report.quality.grade == "B" else "검토 후 산정" %}
 
   <div class="page-shell">
     <div class="page-head">
@@ -17,6 +18,52 @@
         {% endif %}
       </div>
     </div>
+
+    <section class="panel">
+      <div class="section-header">
+        <div>
+          <div class="page-kicker">DATASET ANALYSIS REPORT</div>
+          <h2>Dataset Analysis Report</h2>
+        </div>
+        <span class="tag quality">Grade {{ report.quality.grade }}</span>
+      </div>
+      <div class="analysis-grid">
+        <div class="analysis-card">
+          <h3>Format</h3>
+          <dl class="key-value-list">
+            <div><dt>Format</dt><dd>{{ report.format.detected_format }}</dd></div>
+            <div><dt>Rows</dt><dd>{{ report.schema.row_count }}</dd></div>
+            <div><dt>Columns</dt><dd>{{ report.schema.column_count }}</dd></div>
+          </dl>
+        </div>
+        <div class="analysis-card">
+          <h3>Quality</h3>
+          <dl class="key-value-list">
+            <div><dt>Missing Rate</dt><dd>{{ summary.avg_null_rate if summary else "-" }}%</dd></div>
+            <div><dt>Duplicate Rate</dt><dd>{{ report.duplicate.duplicate_row_rate | default(0) }}%</dd></div>
+            <div><dt>Outlier Rate</dt><dd>확장 예정</dd></div>
+            <div><dt>Quality Score</dt><dd>{{ report.quality.score }}</dd></div>
+          </dl>
+        </div>
+        <div class="analysis-card">
+          <h3>Privacy</h3>
+          <dl class="key-value-list">
+            <div><dt>Email</dt><dd>{{ report.pii.pii_counts.get("email", 0) if report.pii.pii_counts else 0 }}</dd></div>
+            <div><dt>Phone</dt><dd>{{ report.pii.pii_counts.get("phone", 0) if report.pii.pii_counts else 0 }}</dd></div>
+            <div><dt>GPS</dt><dd>{{ report.pii.pii_counts.get("gps", 0) if report.pii.pii_counts else 0 }}</dd></div>
+            <div><dt>PII Risk</dt><dd>{{ report.pii.pii_risk_score }}</dd></div>
+          </dl>
+        </div>
+        <div class="analysis-card">
+          <h3>Value Estimation</h3>
+          <dl class="key-value-list">
+            <div><dt>Dataset Grade</dt><dd>{{ report.quality.grade }}</dd></div>
+            <div><dt>Estimated Price</dt><dd>{{ estimated_price }}</dd></div>
+            <div><dt>Publish</dt><dd>{{ report.dataset_status or report.status }}</dd></div>
+          </dl>
+        </div>
+      </div>
+    </section>
 
     <section class="panel">
       <h2>데이터 기본 정보</h2>

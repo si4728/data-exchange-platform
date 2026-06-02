@@ -2,17 +2,23 @@
 
 {% block content %}
   <div class="page-shell">
-    <div class="page-head">
+    <section class="hero-panel">
       <div>
         <div class="page-kicker">DATASET MARKET</div>
-        <h1>데이터 마켓</h1>
-        <p class="muted">승인된 데이터 상품을 검색하고 포맷, 카테고리, 태그, 품질 점수 기준으로 탐색합니다.</p>
+        <h1>Dataset Marketplace</h1>
+        <p class="muted">검증된 데이터셋을 검색하고 Quality Score, PII Risk, Dataset Grade 기준으로 빠르게 비교합니다.</p>
       </div>
-      <div class="tag-row">
-        <span class="tag neutral">총 {{ pagination.total }}개</span>
-        <span class="tag quality">검증 완료</span>
+      <div class="quick-grid">
+        <div class="metric"><span>검증 완료 상품</span><strong>{{ pagination.total }}</strong></div>
+        <div class="metric"><span>차별화 지표</span><strong>Quality · PII · Grade</strong></div>
+        <div class="metric"><span>판매 방식</span><strong>Download · API · MQTT</strong></div>
       </div>
-    </div>
+      <div class="category-strip">
+        {% for category in ["IoT", "Manufacturing", "AI Training", "Image", "Video", "Telematics", "Research"] %}
+          <a class="category-chip" href="{{ url_for('market', category=category) }}">{{ category }}</a>
+        {% endfor %}
+      </div>
+    </section>
 
     <section class="filter-panel">
       <form action="{{ url_for('market') }}" method="get">
@@ -75,20 +81,38 @@
       </form>
     </section>
 
-    <div class="dataset-grid">
+    <section>
+      <div class="section-header">
+        <h2>Trending Dataset</h2>
+        <span class="muted">품질과 접근 조건을 카드에서 바로 확인합니다</span>
+      </div>
+      <div class="dataset-grid">
       {% for product in products %}
+        {% set quality_score = product.quality_score or 0 %}
+        {% set market_grade = "A+" if quality_score >= 90 else "A" if quality_score >= 80 else "B" if quality_score >= 70 else "C" if quality_score >= 50 else "HOLD" %}
         <section class="dataset-card">
           <div class="card-top">
             {% if product.category %}
               <span class="tag neutral">{{ product.category }}</span>
             {% endif %}
             <span class="tag format">{{ product.file_type }}</span>
-            <span class="tag quality">품질 {{ product.quality_score }}</span>
+            <span class="tag quality">Quality {{ product.quality_score }}</span>
             <span class="tag neutral">{{ product.status }}</span>
           </div>
 
           <h2><a href="{{ url_for('web_product_detail', product_id=product.id) }}">{{ product.title }}</a></h2>
           <p class="muted">{{ product.description or "설명 없음" }}</p>
+
+          <div class="quick-grid mt-sm">
+            <div class="info-row">
+              <span class="muted">Dataset Grade</span><br>
+              <strong>{{ market_grade }}</strong>
+            </div>
+            <div class="info-row">
+              <span class="muted">PII Risk</span><br>
+              <strong>{{ product.pii_risk_score if product.pii_risk_score is not none else "-" }}</strong>
+            </div>
+          </div>
 
           <div class="tag-row mt-sm">
             <span class="tag neutral">{{ product.row_count }}행</span>
@@ -121,7 +145,8 @@
                   <button class="secondary" type="submit">관심 저장</button>
                 </form>
               {% endif %}
-              <a class="button" href="{{ url_for('web_product_detail', product_id=product.id) }}">샘플 보기</a>
+              <a class="button secondary" href="{{ url_for('web_product_detail', product_id=product.id) }}">Preview</a>
+              <a class="button" href="{{ url_for('web_product_detail', product_id=product.id) }}">Buy</a>
             </div>
           </div>
         </section>
@@ -134,7 +159,18 @@
           </div>
         </section>
       {% endfor %}
-    </div>
+      </div>
+    </section>
+
+    <section class="panel subtle">
+      <div class="section-header">
+        <div>
+          <h2>Become a Seller</h2>
+          <p class="muted flush">업로드 후 자동 분석 리포트로 품질, 개인정보 위험, 예상 판매 가치를 확인합니다.</p>
+        </div>
+        <a class="button" href="{{ url_for('index') }}">Upload Dataset</a>
+      </div>
+    </section>
 
     <section class="panel">
       <div class="section-header">

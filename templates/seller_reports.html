@@ -25,6 +25,45 @@
       <div class="metric"><span>API 호출</span><strong>{{ totals.api_usage_count }}</strong></div>
     </div>
 
+    <div class="analysis-grid">
+      <section class="analysis-card">
+        <h2>My Datasets</h2>
+        <dl class="key-value-list">
+          {% for report in reports[:3] %}
+            <div><dt>{{ report.title }}</dt><dd>{{ report.product_status }}</dd></div>
+          {% else %}
+            <div><dt>등록 상품</dt><dd>없음</dd></div>
+          {% endfor %}
+        </dl>
+      </section>
+
+      <section class="analysis-card">
+        <h2>Sales</h2>
+        <dl class="key-value-list">
+          <div><dt>Today</dt><dd>집계 예정</dd></div>
+          <div><dt>Month</dt><dd>집계 예정</dd></div>
+          <div><dt>Total</dt><dd>{{ "{:,}".format(totals.paid_amount or 0) }}원</dd></div>
+        </dl>
+      </section>
+
+      <section class="analysis-card">
+        <h2>Downloads</h2>
+        <dl class="key-value-list">
+          <div><dt>CSV</dt><dd>{{ totals.sample_download_count }}</dd></div>
+          <div><dt>API</dt><dd>{{ totals.api_usage_count }}</dd></div>
+          <div><dt>MQTT</dt><dd>로드맵</dd></div>
+        </dl>
+      </section>
+
+      <section class="analysis-card">
+        <h2>Ratings</h2>
+        <dl class="key-value-list">
+          <div><dt>Average</dt><dd>준비 중</dd></div>
+          <div><dt>Reviews</dt><dd>준비 중</dd></div>
+        </dl>
+      </section>
+    </div>
+
     <section class="panel">
       <h2>상품별 운영 현황</h2>
       <table>

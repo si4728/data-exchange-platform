@@ -43,10 +43,48 @@
           <div class="metric"><span>행</span><strong>{{ product.row_count }}</strong></div>
           <div class="metric"><span>컬럼</span><strong>{{ product.column_count }}</strong></div>
           <div class="metric"><span>품질 점수</span><strong>{{ product.quality_score }}</strong></div>
-          {% if can_view_sensitive %}
-            <div class="metric"><span>PII 위험</span><strong>{{ product.pii_risk_score }}</strong></div>
-          {% endif %}
+          <div class="metric"><span>Dataset Grade</span><strong>{{ product.report.quality.grade if product.report and product.report.quality else "-" }}</strong></div>
         </div>
+
+        <section class="panel section-spaced">
+          <h2>Dataset Summary</h2>
+          <div class="analysis-grid">
+            <div class="analysis-card">
+              <h3>Provider</h3>
+              <dl class="key-value-list">
+                <div><dt>Provider</dt><dd>Seller #{{ product.seller_id }}</dd></div>
+                <div><dt>Category</dt><dd>{{ product.category or "-" }}</dd></div>
+                <div><dt>Rows</dt><dd>{{ product.row_count }}</dd></div>
+                <div><dt>Columns</dt><dd>{{ product.column_count }}</dd></div>
+              </dl>
+            </div>
+            <div class="analysis-card">
+              <h3>Trust Metrics</h3>
+              <dl class="key-value-list">
+                <div><dt>Quality Score</dt><dd>{{ product.quality_score }}</dd></div>
+                <div><dt>Grade</dt><dd>{{ product.report.quality.grade if product.report and product.report.quality else "-" }}</dd></div>
+                <div><dt>PII Risk</dt><dd>{{ product.pii_risk_score if product.pii_risk_score is not none else "-" }}</dd></div>
+                <div><dt>Duplicate</dt><dd>{{ product.report.duplicate.duplicate_row_rate | default(0) if product.report and product.report.duplicate else "-" }}%</dd></div>
+              </dl>
+            </div>
+            <div class="analysis-card">
+              <h3>Download</h3>
+              <div class="tag-row">
+                <span class="tag format">{{ product.file_type }}</span>
+                <span class="tag neutral">JSON 변환 준비 중</span>
+                <span class="tag neutral">Parquet 준비 중</span>
+              </div>
+            </div>
+            <div class="analysis-card">
+              <h3>API Access</h3>
+              <dl class="key-value-list">
+                <div><dt>REST API</dt><dd>지원</dd></div>
+                <div><dt>MQTT Stream</dt><dd>로드맵</dd></div>
+                <div><dt>Price</dt><dd>{{ "{:,}".format(product.price or 0) }}원</dd></div>
+              </dl>
+            </div>
+          </div>
+        </section>
 
         {% if product.report and product.report.schema and product.report.schema.columns %}
           <section class="panel section-spaced">
@@ -103,6 +141,27 @@
         </section>
 
         <section class="panel section-spaced">
+          <h2>Preview Statistics</h2>
+          <div class="analysis-grid">
+            <div class="analysis-card">
+              <h3>Statistics</h3>
+              <dl class="key-value-list">
+                <div><dt>Mean</dt><dd>확장 예정</dd></div>
+                <div><dt>Median</dt><dd>확장 예정</dd></div>
+                <div><dt>Std</dt><dd>확장 예정</dd></div>
+              </dl>
+            </div>
+            <div class="analysis-card">
+              <h3>Quality Signals</h3>
+              <dl class="key-value-list">
+                <div><dt>Missing</dt><dd>{{ product.report.review_summary.avg_null_rate if product.report and product.report.review_summary else "-" }}%</dd></div>
+                <div><dt>Outlier</dt><dd>확장 예정</dd></div>
+              </dl>
+            </div>
+          </div>
+        </section>
+
+        <section class="panel section-spaced">
           <h2>라이선스 및 사용 조건</h2>
           <p><strong>{{ product.license_name or "Standard Data License" }}</strong></p>
           <p class="muted">{{ product.usage_terms or "구매 승인 후 내부 분석 목적으로 사용할 수 있으며, 원본 데이터 재판매와 개인정보 재식별 시도는 금지됩니다." }}</p>
@@ -133,6 +192,26 @@
         {% if can_view_sensitive %}
           <p><strong>개인정보 탐지</strong><br>{{ product.report.pii.total_pii_count if product.report and product.report.pii else "-" }}건</p>
         {% endif %}
+
+        <section class="analysis-card">
+          <h3>Dataset API</h3>
+          <dl class="key-value-list">
+            <div><dt>Base URL</dt><dd>/api/v1/products/{{ product.id }}/sample</dd></div>
+            <div><dt>Free</dt><dd>100 Calls/day</dd></div>
+            <div><dt>Basic</dt><dd>10,000원/month</dd></div>
+            <div><dt>Pro</dt><dd>49,000원/month</dd></div>
+          </dl>
+        </section>
+
+        <section class="analysis-card mt-sm">
+          <h3>Real-Time Data Stream</h3>
+          <dl class="key-value-list">
+            <div><dt>Topic</dt><dd>factory/temp/{{ product.id }}</dd></div>
+            <div><dt>Frequency</dt><dd>1 sec</dd></div>
+            <div><dt>Messages</dt><dd>로드맵</dd></div>
+            <div><dt>Subscription</dt><dd>49,000원/month</dd></div>
+          </dl>
+        </section>
 
         <div class="actions">
           {% if current_user and (current_user.role == "ADMIN" or current_user.id == product.seller_id) %}

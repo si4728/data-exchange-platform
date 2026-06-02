@@ -2,23 +2,44 @@
 
 {% block content %}
   <div class="page-shell">
-    <div class="page-head">
+    <section class="hero-panel">
       <div>
         <div class="page-kicker">DATASET UPLOAD</div>
-        <h1>데이터 업로드</h1>
-        <p class="muted">파일을 올리면 포맷 변환, 개인정보 탐지, 중복 검사, 컬럼 통계, 품질 점수를 단계별로 처리합니다.</p>
+        <h1>Upload Dataset</h1>
+        <p class="muted">파일을 올리면 자동 분석을 시작해 Quality Score, PII Risk, Dataset Grade, 판매 준비 상태를 확인합니다.</p>
       </div>
       <div class="tag-row">
-        <span class="tag format">CSV 표준화</span>
-        <span class="tag quality">자동 검증</span>
+        <span class="tag format">CSV</span>
+        <span class="tag format">JSON</span>
+        <span class="tag format">TXT</span>
+        <span class="tag neutral">Parquet 준비 중</span>
+        <span class="tag quality">자동 분석</span>
       </div>
-    </div>
+    </section>
 
     {% if error %}
       <div class="error">{{ error }}</div>
     {% endif %}
 
     <section class="panel">
+      <div class="step-list">
+        <div class="step-card">
+          <span>STEP 1</span>
+          <strong>Upload Dataset</strong>
+          <p class="muted flush">파일과 데이터 설명을 등록합니다.</p>
+        </div>
+        <div class="step-card">
+          <span>STEP 2</span>
+          <strong>Analyze</strong>
+          <p class="muted flush">포맷, 품질, 중복, PII를 자동 검사합니다.</p>
+        </div>
+        <div class="step-card">
+          <span>STEP 3</span>
+          <strong>Publish Ready</strong>
+          <p class="muted flush">승인 후 마켓플레이스에 판매 상품으로 전환합니다.</p>
+        </div>
+      </div>
+
       <form action="{{ url_for('web_upload_dataset') }}" method="post" enctype="multipart/form-data">
         <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
         {% if resubmit_dataset %}
@@ -92,7 +113,7 @@
         </label>
 
         <div class="actions">
-          <button type="submit">{% if resubmit_dataset %}보완 검증 시작{% else %}검증 시작{% endif %}</button>
+          <button type="submit">{% if resubmit_dataset %}보완 검증 시작 · Analyze{% else %}Analyze{% endif %}</button>
           <a class="button secondary" href="{{ url_for('market') }}">마켓 보기</a>
         </div>
       </form>
