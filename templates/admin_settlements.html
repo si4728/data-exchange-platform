@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">ADMIN SETTLEMENTS</div>
+        <h1>관리자 정산 화면</h1>
+        <p class="muted">판매자별 결제 완료액, 플랫폼 수수료, 정산 예정액을 확인합니다.</p>
+      </div>
+      <form action="{{ url_for('web_admin_settlements') }}" method="get" class="inline-filter">
+        <label for="fee_rate">수수료율</label>
+        <input id="fee_rate" name="fee_rate" type="number" min="0" max="100" step="0.1" value="{{ (fee_rate * 100) | round(1) }}">
+        <button type="submit">적용</button>
+      </form>
+    </div>
+
+    <div class="grid">
+      <div class="metric"><span>판매자</span><strong>{{ totals.seller_count }}</strong></div>
+      <div class="metric"><span>주문 수</span><strong>{{ totals.order_count }}</strong></div>
+      <div class="metric"><span>총 주문액</span><strong>{{ "{:,}".format(totals.gross_amount or 0) }}원</strong></div>
+      <div class="metric"><span>결제 완료액</span><strong>{{ "{:,}".format(totals.paid_amount or 0) }}원</strong></div>
+      <div class="metric"><span>결제 대기액</span><strong>{{ "{:,}".format(totals.pending_amount or 0) }}원</strong></div>
+      <div class="metric"><span>플랫폼 수수료</span><strong>{{ "{:,}".format(totals.platform_fee or 0) }}원</strong></div>
+      <div class="metric"><span>정산 예정액</span><strong>{{ "{:,}".format(totals.settlement_due_amount or 0) }}원</strong></div>
+      <div class="metric"><span>적용 수수료율</span><strong>{{ (fee_rate * 100) | round(1) }}%</strong></div>
+    </div>
+
+    <section class="panel">
+      <h2>판매자별 정산 요약</h2>
+      {% if settlements %}
+        <table>
+          <thead>
+            <tr>
+              <th>판매자</th>
+              <th>주문</th>
+              <th>총 주문액</th>
+              <th>결제 완료액</th>
+              <th>결제 대기액</th>
+              <th>수수료</th>
+              <th>정산 예정액</th>
+              <th>상태</th>
+              <th>최근 결제</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for item in settlements %}
+              <tr>
+                <td>
+                  <strong>{{ item.seller_name }}</strong><br>
+                  <span class="muted">{{ item.seller_email }}</span><br>
+                  <span class="muted">{{ item.seller_company or "-" }}</span>
+                </td>
+                <td>{{ item.order_count }}</td>
+                <td>{{ "{:,}".format(item.gross_amount or 0) }}원</td>
+                <td>{{ "{:,}".format(item.paid_amount or 0) }}원</td>
+                <td>{{ "{:,}".format(item.pending_amount or 0) }}원</td>
+                <td>{{ "{:,}".format(item.platform_fee or 0) }}원</td>
+                <td><strong>{{ "{:,}".format(item.settlement_due_amount or 0) }}원</strong></td>
+                <td><span class="status {{ item.settlement_status | lower }}">{{ item.settlement_status }}</span></td>
+                <td>{{ item.latest_paid_at or "-" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">아직 정산 대상 주문이 없습니다.</p>
+      {% endif %}
+    </section>
+
+    <div class="actions">
+      <a class="button secondary" href="{{ url_for('web_admin_dashboard') }}">운영 대시보드</a>
+      <a class="button secondary" href="{{ url_for('web_admin_purchases') }}">구매 요청</a>
+      <a class="button" href="{{ url_for('web_admin_export_report', report_name='settlements', fee_rate=fee_rate) }}">정산 CSV 내보내기</a>
+    </div>
+  </div>
+{% endblock %}

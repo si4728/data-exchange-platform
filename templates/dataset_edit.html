@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>데이터 속성 수정</h1>
+  <p class="muted">상품으로 게시되기 전까지 데이터 이름과 설명을 수정할 수 있습니다.</p>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <section class="panel">
+    <form action="{{ url_for('web_update_dataset', dataset_id=dataset.id) }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <label for="data_name">데이터 이름</label>
+      <input id="data_name" name="data_name" type="text" value="{{ dataset.data_name or dataset.filename }}" required>
+
+      <label for="description">내용 설명</label>
+      <textarea id="description" name="description" rows="6">{{ dataset.description or "" }}</textarea>
+
+      <div class="actions">
+        <button type="submit">저장</button>
+        <a class="button secondary" href="{{ url_for('web_dataset_report', dataset_id=dataset.id) }}">취소</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

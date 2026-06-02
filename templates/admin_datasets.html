@@ -1,0 +1,184 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">ADMIN REVIEW</div>
+        <h1>관리자 검토</h1>
+        <p class="muted">업로드된 데이터를 검색하고 상태, 품질, 개인정보 위험도, 중복 상태별로 검토합니다.</p>
+      </div>
+      <span class="tag neutral">검토 대상 {{ datasets | length }}건</span>
+    </div>
+
+    <section class="filter-panel">
+      <form action="{{ url_for('web_admin_list_datasets') }}" method="get">
+        <div class="search-row">
+          <div>
+            <label for="q">검색어</label>
+            <input id="q" name="q" type="search" value="{{ filters.query or '' }}" placeholder="데이터명, 설명, 파일명, 포맷">
+          </div>
+          <div>
+            <label for="status">검토 상태</label>
+            <select id="status" name="status">
+              <option value="" {% if not filters.status %}selected{% endif %}>전체</option>
+              <option value="PASS" {% if filters.status == "PASS" %}selected{% endif %}>PASS</option>
+              <option value="REVIEW" {% if filters.status == "REVIEW" %}selected{% endif %}>REVIEW</option>
+              <option value="APPROVED" {% if filters.status == "APPROVED" %}selected{% endif %}>APPROVED</option>
+              <option value="REJECTED" {% if filters.status == "REJECTED" %}selected{% endif %}>REJECTED</option>
+            </select>
+          </div>
+          <div>
+            <label for="duplicate_status">중복 상태</label>
+            <select id="duplicate_status" name="duplicate_status">
+              <option value="" {% if not filters.duplicate_status %}selected{% endif %}>전체</option>
+              <option value="NEW" {% if filters.duplicate_status == "NEW" %}selected{% endif %}>NEW</option>
+              <option value="DUPLICATE" {% if filters.duplicate_status == "DUPLICATE" %}selected{% endif %}>DUPLICATE</option>
+              <option value="PARTIAL_DUPLICATE" {% if filters.duplicate_status == "PARTIAL_DUPLICATE" %}selected{% endif %}>PARTIAL_DUPLICATE</option>
+              <option value="MOSTLY_DUPLICATE" {% if filters.duplicate_status == "MOSTLY_DUPLICATE" %}selected{% endif %}>MOSTLY_DUPLICATE</option>
+            </select>
+          </div>
+          <div>
+            <label for="min_quality_score">최소 품질</label>
+            <input id="min_quality_score" name="min_quality_score" type="number" min="0" max="100" step="1" value="{{ filters.min_quality_score or '' }}">
+          </div>
+          <div>
+            <label for="max_quality_score">최대 품질</label>
+            <input id="max_quality_score" name="max_quality_score" type="number" min="0" max="100" step="1" value="{{ filters.max_quality_score or '' }}">
+          </div>
+          <div>
+            <label for="max_pii_risk_score">최대 PII</label>
+            <input id="max_pii_risk_score" name="max_pii_risk_score" type="number" min="0" max="100" step="1" value="{{ filters.max_pii_risk_score or '' }}">
+          </div>
+          <button type="submit">검색</button>
+          <a class="button secondary" href="{{ url_for('web_admin_list_datasets') }}">초기화</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>검토 목록</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>데이터</th>
+            <th>포맷</th>
+            <th>행/컬럼</th>
+            <th>품질</th>
+            <th>PII</th>
+            <th>중복</th>
+            <th>판단 근거</th>
+            <th>상태</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for dataset in datasets %}
+            {% set reject_like = dataset.duplicate_status in ["DUPLICATE", "MOSTLY_DUPLICATE"] or (dataset.quality_score is not none and dataset.quality_score < 60) %}
+            {% set review_like = (dataset.pii_risk_score is not none and dataset.pii_risk_score >= 50) or dataset.status == "REVIEW" %}
+            <tr>
+              <td>{{ dataset.id }}</td>
+              <td>
+                <a href="{{ url_for('web_dataset_report', dataset_id=dataset.id) }}">{{ dataset.data_name or dataset.filename }}</a>
+                <div class="muted">{{ dataset.filename }}</div>
+                <div class="muted">{{ dataset.description or "설명 없음" }}</div>
+                {% if dataset.resubmission_parent %}
+                  <div class="tag-row" style="margin-top: 8px">
+                    <span class="status review">보완 제출</span>
+                    <a class="tag neutral" href="{{ url_for('web_dataset_report', dataset_id=dataset.resubmission_parent.id) }}">
+                      원본 #{{ dataset.resubmission_parent.id }}
+                    </a>
+                  </div>
+                  {% if dataset.resubmission_parent.review_note %}
+                    <div class="muted">원본 반려 사유: {{ dataset.resubmission_parent.review_note }}</div>
+                  {% endif %}
+                {% endif %}
+                {% if dataset.resubmission_count %}
+                  <div class="muted">후속 보완 제출 {{ dataset.resubmission_count }}건</div>
+                {% endif %}
+              </td>
+              <td>{{ dataset.file_type }}</td>
+              <td>{{ dataset.row_count }} / {{ dataset.column_count }}</td>
+              <td>{{ dataset.quality_score }}</td>
+              <td>{{ dataset.pii_risk_score }}</td>
+              <td>{{ dataset.duplicate_status }}</td>
+              <td>
+                <div class="tag-row">
+                  {% if reject_like %}
+                    <span class="status rejected">반려 검토</span>
+                  {% elif review_like %}
+                    <span class="status review">추가 검토</span>
+                  {% else %}
+                    <span class="status approved">승인 후보</span>
+                  {% endif %}
+                  <span class="tag neutral">{{ dataset.review_recommendation }}</span>
+                </div>
+
+                <div class="muted" style="margin-top: 8px">
+                  평균 NULL {{ dataset.avg_null_rate if dataset.avg_null_rate is not none else "-" }}%
+                  · PII 컬럼 {{ dataset.pii_column_count if dataset.pii_column_count is not none else "-" }}개
+                  · 고결측 {{ dataset.high_null_column_count if dataset.high_null_column_count is not none else "-" }}개
+                </div>
+
+                {% if dataset.findings %}
+                  <ul class="compact-list">
+                    {% for finding in dataset.findings %}
+                      <li><strong>{{ finding.severity }}</strong> {{ finding.title }}</li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+
+                {% if dataset.pii_columns %}
+                  <div class="muted">PII 의심: {{ dataset.pii_columns | join(", ") }}</div>
+                {% endif %}
+                {% if dataset.high_null_columns %}
+                  <div class="muted">고결측: {{ dataset.high_null_columns | join(", ") }}</div>
+                {% endif %}
+                {% if dataset.top_columns %}
+                  <div class="muted">
+                    주요 컬럼:
+                    {% for column in dataset.top_columns %}
+                      {{ column.column_name }}{% if not loop.last %}, {% endif %}
+                    {% endfor %}
+                  </div>
+                {% endif %}
+                {% if dataset.resubmission_children %}
+                  <details style="margin-top: 8px">
+                    <summary>후속 보완 제출</summary>
+                    <ul class="compact-list">
+                      {% for child in dataset.resubmission_children %}
+                        <li>
+                          <a href="{{ url_for('web_dataset_report', dataset_id=child.id) }}">#{{ child.id }} {{ child.data_name or child.filename }}</a>
+                          · <span class="status {{ child.status | lower }}">{{ child.status }}</span>
+                          · 품질 {{ child.quality_score }}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  </details>
+                {% endif %}
+              </td>
+              <td><span class="status {{ dataset.status | lower }}">{{ dataset.status }}</span></td>
+              <td>
+                <div class="actions" style="margin-top: 0">
+                  <form action="{{ url_for('web_admin_approve_dataset', dataset_id=dataset.id) }}" method="post" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit">승인 및 게시</button>
+                  </form>
+                </div>
+                <form action="{{ url_for('web_admin_reject_dataset', dataset_id=dataset.id) }}" method="post" style="margin-top: 8px">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <label for="review_note_{{ dataset.id }}">반려 사유</label>
+                  <textarea id="review_note_{{ dataset.id }}" name="review_note" rows="2" placeholder="반려 사유를 입력하세요">{{ dataset.review_note or "" }}</textarea>
+                  <button class="danger" type="submit">반려</button>
+                </form>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="10">검색 결과가 없습니다.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+{% endblock %}

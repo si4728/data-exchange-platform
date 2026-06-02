@@ -1,0 +1,62 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">BUYER ORDERS</div>
+        <h1>내 주문/결제 내역</h1>
+        <p class="muted">구매한 데이터의 주문번호, 결제 상태, 접근 가능 여부와 API 키 상태를 확인합니다.</p>
+      </div>
+      <div class="actions">
+        <a class="button secondary" href="{{ url_for('user_dashboard') }}">내 대시보드</a>
+        <a class="button" href="{{ url_for('market') }}">마켓 보기</a>
+      </div>
+    </div>
+
+    <section class="panel">
+      <h2>주문 목록</h2>
+      {% if orders %}
+        <table>
+          <thead>
+            <tr>
+              <th>주문</th>
+              <th>상품</th>
+              <th>가격 정책</th>
+              <th>금액</th>
+              <th>구매 상태</th>
+              <th>결제 상태</th>
+              <th>접근</th>
+              <th>API 키</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders %}
+              {% set access_ready = order.payment_status == "PAID" or order.purchase_status == "COMPLETED" or order.pricing_model == "FREE" %}
+              <tr>
+                <td>#{{ order.id }}<br><span class="muted">{{ order.created_at }}</span></td>
+                <td><a href="{{ url_for('web_purchase_detail', request_id=order.purchase_request_id) }}">{{ order.product_title }}</a></td>
+                <td>{{ "무료" if order.pricing_model == "FREE" else "일회성 구매" }}</td>
+                <td>{{ "{:,}".format(order.amount or 0) }} {{ order.currency }}</td>
+                <td><span class="status {{ order.purchase_status | lower }}">{{ order.purchase_status }}</span></td>
+                <td><span class="status {{ order.payment_status | lower }}">{{ order.payment_status }}</span></td>
+                <td>{{ "가능" if access_ready else "대기" }}</td>
+                <td>
+                  {% if order.api_key_id %}
+                    <code>{{ order.api_key_prefix }}...</code>
+                  {% elif access_ready %}
+                    <span class="muted">발급 가능</span>
+                  {% else %}
+                    <span class="muted">접근 가능 후 발급</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">아직 주문 내역이 없습니다.</p>
+      {% endif %}
+    </section>
+  </div>
+{% endblock %}

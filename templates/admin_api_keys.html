@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">ADMIN API KEYS</div>
+        <h1>API 키 관리</h1>
+        <p class="muted">발급된 API 키의 상태, 사용량, 월간/전체 호출 한도를 확인하고 필요 시 비활성화합니다.</p>
+      </div>
+      <span class="tag neutral">총 {{ api_keys | length }}건</span>
+    </div>
+
+    <section class="filter-panel">
+      <form action="{{ url_for('web_admin_api_keys') }}" method="get">
+        <div class="search-row">
+          <div>
+            <label for="status">상태</label>
+            <select id="status" name="status">
+              <option value="" {% if not selected_status %}selected{% endif %}>전체</option>
+              <option value="ACTIVE" {% if selected_status == "ACTIVE" %}selected{% endif %}>ACTIVE</option>
+              <option value="INACTIVE" {% if selected_status == "INACTIVE" %}selected{% endif %}>INACTIVE</option>
+            </select>
+          </div>
+          <button type="submit">필터 적용</button>
+          <a class="button secondary" href="{{ url_for('web_admin_api_keys') }}">초기화</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>API 키 목록</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>키</th>
+            <th>상품</th>
+            <th>사용자</th>
+            <th>구매 상태</th>
+            <th>키 상태</th>
+            <th>월간 사용량</th>
+            <th>전체 사용량</th>
+            <th>발급일</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for key in api_keys %}
+            <tr>
+              <td>{{ key.id }}</td>
+              <td><code>{{ key.token_prefix }}...</code></td>
+              <td>{{ key.product_title }}</td>
+              <td>{{ key.user_name }}<br><span class="muted">{{ key.user_email }}</span></td>
+              <td><span class="status {{ key.purchase_status | lower }}">{{ key.purchase_status }}</span></td>
+              <td><span class="status {{ key.status | lower }}">{{ key.status }}</span></td>
+              <td>{{ key.monthly_usage_count }} / {{ key.monthly_request_limit }}</td>
+              <td>{{ key.total_usage_count }} / {{ key.total_request_limit }}</td>
+              <td>{{ key.created_at }}</td>
+              <td>
+                {% if key.status == "ACTIVE" %}
+                  <form action="{{ url_for('web_revoke_api_key', api_key_id=key.id) }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger" type="submit">비활성화</button>
+                  </form>
+                {% else %}
+                  <span class="muted">처리 완료</span>
+                {% endif %}
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="10">발급된 API 키가 없습니다.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+{% endblock %}

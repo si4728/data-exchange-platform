@@ -1,0 +1,201 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">ADMIN OPERATIONS</div>
+        <h1>관리자 운영 대시보드</h1>
+        <p class="muted">OBDM의 사용자, 데이터 검증, 마켓 상품, 구매 요청, 주문 준비 상태와 운영 로그를 한 화면에서 확인합니다.</p>
+      </div>
+      <div class="actions">
+        <a class="button" href="{{ url_for('web_admin_list_datasets') }}">데이터 검토</a>
+        <a class="button secondary" href="{{ url_for('web_admin_purchases') }}">구매 요청</a>
+      </div>
+    </div>
+
+    <section class="panel" style="margin-bottom: 18px">
+      <div class="actions" style="justify-content: space-between; align-items: center; margin-top: 0">
+        <h2 style="margin: 0">알림</h2>
+        {% if notification_unread_count %}
+          <form action="{{ url_for('web_mark_all_notifications_read') }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <button class="secondary" type="submit">모두 읽음</button>
+          </form>
+        {% endif %}
+      </div>
+      {% if notifications %}
+        <table>
+          <thead>
+            <tr>
+              <th>상태</th>
+              <th>내용</th>
+              <th>시간</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for notification in notifications %}
+              <tr>
+                <td>
+                  {% if notification.read_at %}
+                    <span class="status">읽음</span>
+                  {% else %}
+                    <span class="status review">새 알림</span>
+                  {% endif %}
+                </td>
+                <td>
+                  <strong>{{ notification.title }}</strong>
+                  <div class="muted">{{ notification.message }}</div>
+                </td>
+                <td>{{ notification.created_at }}</td>
+                <td>
+                  {% if not notification.read_at %}
+                    <form action="{{ url_for('web_mark_notification_read', notification_id=notification.id) }}" method="post">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <input type="hidden" name="next" value="{{ request.path }}">
+                      <button type="submit">읽음</button>
+                    </form>
+                  {% else %}
+                    <span class="muted">{{ notification.read_at }}</span>
+                  {% endif %}
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">아직 알림이 없습니다.</p>
+      {% endif %}
+    </section>
+
+    <div class="grid">
+      <div class="metric"><span>사용자</span><strong>{{ metrics.user_count }}</strong></div>
+      <div class="metric"><span>전체 데이터셋</span><strong>{{ metrics.dataset_count }}</strong></div>
+      <div class="metric"><span>마켓 상품</span><strong>{{ metrics.active_product_count }}</strong></div>
+      <div class="metric"><span>구매 요청</span><strong>{{ metrics.purchase_count }}</strong></div>
+      <div class="metric"><span>주문 준비</span><strong>{{ metrics.order_count }}</strong></div>
+      <div class="metric"><span>주문 예상액</span><strong>{{ "{:,}".format(metrics.estimated_order_amount or 0) }}원</strong></div>
+      <div class="metric"><span>결제 대기액</span><strong>{{ "{:,}".format(metrics.pending_order_amount or 0) }}원</strong></div>
+      <div class="metric"><span>평균 품질 점수</span><strong>{{ metrics.avg_quality_score }}</strong></div>
+    </div>
+
+    <section class="panel" style="margin-top: 18px">
+      <h2>오늘의 운영 현황</h2>
+      <div class="grid">
+        <div class="metric"><span>오늘 업로드</span><strong>{{ metrics.today_dataset_count }}</strong></div>
+        <div class="metric"><span>오늘 상품 등록</span><strong>{{ metrics.today_product_count }}</strong></div>
+        <div class="metric"><span>오늘 구매 요청</span><strong>{{ metrics.today_purchase_count }}</strong></div>
+        <div class="metric"><span>오늘 API 호출</span><strong>{{ metrics.today_api_usage_count }}</strong></div>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px">
+      <h2>검토 리스크 요약</h2>
+      <div class="grid">
+        <p><strong>PASS:</strong> {{ metrics.dataset_status_counts.get("PASS", 0) }}</p>
+        <p><strong>REVIEW:</strong> {{ metrics.dataset_status_counts.get("REVIEW", 0) }}</p>
+        <p><strong>APPROVED:</strong> {{ metrics.dataset_status_counts.get("APPROVED", 0) }}</p>
+        <p><strong>REJECTED:</strong> {{ metrics.dataset_status_counts.get("REJECTED", 0) }}</p>
+        <p><strong>PII 고위험:</strong> {{ metrics.high_pii_dataset_count }}</p>
+        <p><strong>중복 위험:</strong> {{ metrics.duplicate_risk_dataset_count }}</p>
+      </div>
+    </section>
+
+    <section class="panel" style="margin-top: 18px">
+      <h2>주문 준비 목록</h2>
+      {% if orders %}
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>상품</th>
+              <th>구매자</th>
+              <th>판매자</th>
+              <th>금액</th>
+              <th>결제</th>
+              <th>주문</th>
+              <th>작업</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for order in orders[:10] %}
+              <tr>
+                <td>{{ order.id }}</td>
+                <td>{{ order.product_title }}</td>
+                <td>{{ order.buyer_name }}<br><span class="muted">{{ order.buyer_email }}</span></td>
+                <td>{{ order.seller_name }}<br><span class="muted">{{ order.seller_email }}</span></td>
+                <td>{{ "{:,}".format(order.amount or 0) }} {{ order.currency }}</td>
+                <td><span class="status {{ order.payment_status | lower }}">{{ order.payment_status }}</span></td>
+                <td><span class="status {{ order.order_status | lower }}">{{ order.order_status }}</span></td>
+                <td>
+                  <form action="{{ url_for('web_admin_update_order_payment_status', order_id=order.id) }}" method="post">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <input type="hidden" name="next" value="{{ request.path }}">
+                    <input type="hidden" name="payment_note" value="관리자 대시보드 빠른 처리">
+                    <select name="payment_status">
+                      {% for status in ["PAYMENT_REQUESTED", "PAID", "FAILED", "CANCELED"] %}
+                        <option value="{{ status }}">{{ status }}</option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit">저장</button>
+                  </form>
+                </td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">아직 생성된 주문 준비 내역이 없습니다.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel" style="margin-top: 18px">
+      <h2>최근 감사 로그</h2>
+      {% if audit_logs %}
+        <table>
+          <thead>
+            <tr>
+              <th>시간</th>
+              <th>사용자</th>
+              <th>행위</th>
+              <th>대상</th>
+              <th>상세</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for log in audit_logs %}
+              <tr>
+                <td>{{ log.created_at }}</td>
+                <td>{{ log.actor_name or "-" }}<br><span class="muted">{{ log.actor_email or "" }}</span></td>
+                <td>{{ log.action }}</td>
+                <td>{{ log.target_type }} #{{ log.target_id or "-" }}</td>
+                <td><code>{{ log.detail_json }}</code></td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      {% else %}
+        <p class="muted">아직 감사 로그가 없습니다.</p>
+      {% endif %}
+    </section>
+
+    <div class="actions">
+      <a class="button" href="{{ url_for('web_admin_users') }}">사용자 관리</a>
+      <a class="button" href="{{ url_for('web_admin_list_datasets') }}">데이터 검토</a>
+      <a class="button" href="{{ url_for('web_admin_products') }}">상품 관리</a>
+      <a class="button" href="{{ url_for('web_admin_purchases') }}">구매 요청</a>
+      <a class="button" href="{{ url_for('web_admin_settlements') }}">정산 관리</a>
+      <a class="button" href="{{ url_for('web_admin_operations_checklist') }}">운영 점검표</a>
+      <a class="button secondary" href="{{ url_for('web_admin_database_backup') }}">DB 백업</a>
+      <a class="button secondary" href="{{ url_for('web_admin_export_report', report_name='datasets') }}">데이터 CSV</a>
+      <a class="button secondary" href="{{ url_for('web_admin_export_report', report_name='orders') }}">주문 CSV</a>
+      <a class="button secondary" href="{{ url_for('web_admin_export_report', report_name='settlements') }}">정산 CSV</a>
+      <a class="button" href="{{ url_for('web_admin_downloads') }}">다운로드 로그</a>
+      <a class="button" href="{{ url_for('web_admin_api_keys') }}">API 키</a>
+      <a class="button" href="{{ url_for('web_admin_api_usage') }}">API 로그</a>
+      <a class="button" href="{{ url_for('web_admin_audit_logs') }}">감사 로그</a>
+    </div>
+  </div>
+{% endblock %}

@@ -1,0 +1,135 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">RELEASE OPERATIONS</div>
+        <h1>운영 점검표</h1>
+        <p class="muted">OBDM 배포 전 환경, 보안, 파일 보관 정책, DB 상태, 테스트 기준을 한 화면에서 확인합니다.</p>
+      </div>
+      <div class="actions">
+        <a class="button" href="{{ url_for('web_admin_dashboard') }}">운영 대시보드</a>
+        <a class="button secondary" href="{{ url_for('web_admin_export_report', report_name='datasets') }}">데이터 CSV</a>
+        <a class="button secondary" href="{{ url_for('web_admin_database_backup') }}">DB 백업</a>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="metric">
+        <span>SECRET_KEY</span>
+        <strong>{{ "설정됨" if operations_status.secret_ready else "조치 필요" }}</strong>
+      </div>
+      <div class="metric">
+        <span>SQLite DB</span>
+        <strong>{{ "존재" if operations_status.database_exists else "없음" }}</strong>
+      </div>
+      <div class="metric">
+        <span>스키마</span>
+        <strong>{{ "최신" if operations_status.schema_status.is_current else "누락 있음" }}</strong>
+      </div>
+      <div class="metric">
+        <span>샘플 크기</span>
+        <strong>{{ operations_status.retention.sample_size }}</strong>
+      </div>
+    </div>
+
+    <section class="panel">
+      <h2>배포 전 핵심 체크</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>영역</th>
+            <th>항목</th>
+            <th>상태</th>
+            <th>확인 내용</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for check in operations_status.checks %}
+            <tr>
+              <td>{{ check.area }}</td>
+              <td><strong>{{ check.item }}</strong></td>
+              <td><span class="status {{ check.status | lower }}">{{ check.status }}</span></td>
+              <td>{{ check.message }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>환경 설정</h2>
+      <table>
+        <tbody>
+          <tr>
+            <th>관리자 이메일</th>
+            <td>{{ operations_status.admin_email }}</td>
+          </tr>
+          <tr>
+            <th>기본 관리자 비밀번호</th>
+            <td>{{ "기본값 사용 중 - 운영 전 변경 필요" if operations_status.admin_password_is_default else "변경됨" }}</td>
+          </tr>
+          <tr>
+            <th>DB 경로</th>
+            <td><code>{{ operations_status.database_path }}</code></td>
+          </tr>
+          <tr>
+            <th>마이그레이션 누락</th>
+            <td>
+              {% if operations_status.schema_status.missing_versions %}
+                {{ operations_status.schema_status.missing_versions | join(", ") }}
+              {% else %}
+                없음
+              {% endif %}
+            </td>
+          </tr>
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>파일 보관 정책</h2>
+      <div class="grid">
+        <p><strong>업로드 원본 삭제:</strong> {{ "예" if operations_status.retention.delete_uploaded_files_after_processing else "아니오" }}</p>
+        <p><strong>CSV 표준화 파일 보관:</strong> {{ "예" if operations_status.retention.keep_normalized_data else "아니오" }}</p>
+        <p><strong>샘플 파일 보관:</strong> {{ "예" if operations_status.retention.keep_samples else "아니오" }}</p>
+        <p><strong>샘플 최대 행 수:</strong> {{ operations_status.retention.sample_size }}</p>
+      </div>
+      <table style="margin-top: 14px">
+        <thead>
+          <tr>
+            <th>저장소</th>
+            <th>경로</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for directory in operations_status.storage_dirs %}
+            <tr>
+              <td>{{ directory.name }}</td>
+              <td><code>{{ directory.path }}</code></td>
+              <td><span class="status {{ 'pass' if directory.exists else 'review' }}">{{ "존재" if directory.exists else "생성 필요" }}</span></td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>테스트 실행 기준</h2>
+      <p class="muted">배포 후보는 최소한 컴파일 검사, 권한별 접근 테스트, UI 문구 테스트, 스키마 마이그레이션 테스트, 보안 회귀 테스트를 통과해야 합니다.</p>
+      <pre><code>python -m compileall app.py data_marketplace tests
+python tests\operations_checklist_test.py
+python tests\route_access_test.py
+python tests\ui_text_smoke_test.py
+python tests\schema_migration_test.py
+python tests\security_regression_test.py</code></pre>
+    </section>
+
+    <section class="panel">
+      <h2>PG 연동 준비</h2>
+      <p class="muted">현재 결제 흐름은 수동 승인 기반이며, 결제 Provider, 참조번호, 이벤트 이력 저장 구조까지 준비되어 있습니다. 실제 PG 계약, 웹훅 검증, 실패 재시도 정책은 후속 운영 단계에서 연결합니다.</p>
+    </section>
+  </div>
+{% endblock %}

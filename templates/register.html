@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>회원가입</h1>
+  <p class="muted">가입 후 데이터 업로드와 구매 요청 기능을 사용할 수 있습니다.</p>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <section class="panel">
+    <form action="{{ url_for('register_post') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <label for="name">이름</label>
+      <input id="name" name="name" type="text" required>
+
+      <label for="email">이메일</label>
+      <input id="email" name="email" type="email" required>
+
+      <label for="password">비밀번호</label>
+      <input id="password" name="password" type="password" required>
+
+      <label for="company">회사/기관</label>
+      <input id="company" name="company" type="text">
+
+      <label for="phone">연락처</label>
+      <input id="phone" name="phone" type="text">
+
+      <div class="actions">
+        <button type="submit">가입하기</button>
+        <a class="button secondary" href="{{ url_for('login') }}">로그인</a>
+      </div>
+    </form>
+  </section>
+{% endblock %}

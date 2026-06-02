@@ -1,0 +1,36 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>다운로드 로그</h1>
+  <p class="muted">샘플 파일 다운로드 이력을 최근 200건까지 확인합니다.</p>
+  <div class="actions">
+    <a class="button" href="{{ url_for('web_admin_export_report', report_name='downloads') }}">다운로드 CSV 내보내기</a>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>상품</th>
+        <th>사용자</th>
+        <th>파일명</th>
+        <th>IP</th>
+        <th>일시</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in download_logs %}
+        <tr>
+          <td>{{ log.id }}</td>
+          <td>{{ log.product_title }}</td>
+          <td>{{ log.user_name }}<br><span class="muted">{{ log.user_email }}</span></td>
+          <td>{{ log.file_name }}</td>
+          <td>{{ log.ip_address }}</td>
+          <td>{{ log.created_at }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="6">다운로드 로그가 없습니다.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

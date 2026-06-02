@@ -1,0 +1,85 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">ADMIN PURCHASES</div>
+        <h1>구매 요청 관리</h1>
+        <p class="muted">구매자, 상품명, 메시지를 검색하고 요청 상태별로 검토합니다.</p>
+      </div>
+      <span class="tag neutral">총 {{ purchases | length }}건</span>
+    </div>
+
+    <section class="filter-panel">
+      <form action="{{ url_for('web_admin_purchases') }}" method="get">
+        <div class="search-row">
+          <div>
+            <label for="q">검색어</label>
+            <input id="q" name="q" type="search" value="{{ filters.query or '' }}" placeholder="상품명, 구매자, 이메일, 메시지">
+          </div>
+          <div>
+            <label for="status">상태</label>
+            <select id="status" name="status">
+              <option value="" {% if not filters.status %}selected{% endif %}>전체</option>
+              <option value="REQUESTED" {% if filters.status == "REQUESTED" %}selected{% endif %}>REQUESTED</option>
+              <option value="APPROVED" {% if filters.status == "APPROVED" %}selected{% endif %}>APPROVED</option>
+              <option value="REJECTED" {% if filters.status == "REJECTED" %}selected{% endif %}>REJECTED</option>
+              <option value="COMPLETED" {% if filters.status == "COMPLETED" %}selected{% endif %}>COMPLETED</option>
+            </select>
+          </div>
+          <button type="submit">검색</button>
+          <a class="button secondary" href="{{ url_for('web_admin_purchases') }}">초기화</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>구매 요청 목록</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>상품</th>
+            <th>구매자</th>
+            <th>메시지</th>
+            <th>상태</th>
+            <th>다운로드</th>
+            <th>검토 메모</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for purchase in purchases %}
+            <tr>
+              <td>{{ purchase.id }}</td>
+              <td>
+                <a href="{{ url_for('web_purchase_detail', request_id=purchase.id) }}">{{ purchase.product_title }}</a>
+                <div class="muted">{{ purchase.product_price }}원 · {{ purchase.product_status }}</div>
+              </td>
+              <td>{{ purchase.buyer_name }}<br><span class="muted">{{ purchase.buyer_email }}</span></td>
+              <td>{{ purchase.message or "" }}</td>
+              <td><span class="status {{ purchase.status | lower }}">{{ purchase.status }}</span></td>
+              <td>{{ purchase.sample_download_limit or 0 }}회 한도</td>
+              <td>{{ purchase.review_note or "" }}</td>
+              <td>
+                <form action="{{ url_for('web_admin_approve_purchase', request_id=purchase.id) }}" method="post" style="display:inline">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <button type="submit">승인</button>
+                </form>
+                <form action="{{ url_for('web_admin_reject_purchase', request_id=purchase.id) }}" method="post" style="margin-top: 8px">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <label for="purchase_review_note_{{ purchase.id }}">반려 사유</label>
+                  <textarea id="purchase_review_note_{{ purchase.id }}" name="review_note" rows="2" placeholder="반려 사유를 입력하세요">{{ purchase.review_note or "" }}</textarea>
+                  <button class="danger" type="submit">반려</button>
+                </form>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="8">구매 요청이 없습니다.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+{% endblock %}

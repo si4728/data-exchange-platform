@@ -1,0 +1,11 @@
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.venv/
+venv/
+converted_csv/
+uploads/
+samples/
+reports/
+database/*.db
+.codex-docs-cache/

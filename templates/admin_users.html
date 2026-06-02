@@ -1,0 +1,42 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>사용자 관리</h1>
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>이름</th>
+        <th>이메일</th>
+        <th>회사</th>
+        <th>역할</th>
+        <th>상태</th>
+        <th>작업</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for user in users %}
+        <tr>
+          <td>{{ user.id }}</td>
+          <td>{{ user.name }}</td>
+          <td>{{ user.email }}</td>
+          <td>{{ user.company }}</td>
+          <td>{{ user.role }}</td>
+          <td><span class="status {{ user.status | lower }}">{{ user.status }}</span></td>
+          <td>
+            <form action="{{ url_for('web_admin_activate_user', user_id=user.id) }}" method="post" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit">활성화</button>
+            </form>
+            <form action="{{ url_for('web_admin_suspend_user', user_id=user.id) }}" method="post" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button class="danger" type="submit">정지</button>
+            </form>
+          </td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7">등록된 사용자가 없습니다.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

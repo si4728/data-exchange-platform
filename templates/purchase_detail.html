@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">PURCHASE DETAIL</div>
+        <h1>구매 요청 상세</h1>
+        <p class="muted">{{ purchase.product_title }} · 요청 #{{ purchase.id }}</p>
+      </div>
+      <div class="tag-row">
+        <span class="status {{ purchase.status | lower }}">{{ purchase.status }}</span>
+        <span class="tag neutral">{{ purchase.product_status }}</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="metric"><span>상품 가격</span><strong>{{ "{:,}".format(purchase.product_price or 0) }}원</strong></div>
+      <div class="metric"><span>포맷</span><strong>{{ purchase.file_type or "-" }}</strong></div>
+      <div class="metric"><span>행</span><strong>{{ purchase.row_count or "-" }}</strong></div>
+      <div class="metric"><span>품질</span><strong>{{ purchase.quality_score or "-" }}</strong></div>
+    </div>
+
+    {% if order %}
+      <section class="panel">
+        <h2>주문 및 결제 상태</h2>
+        <div class="grid">
+          <div class="metric"><span>주문 번호</span><strong>#{{ order.id }}</strong></div>
+          <div class="metric"><span>주문 금액</span><strong>{{ "{:,}".format(order.amount or 0) }} {{ order.currency }}</strong></div>
+          <div class="metric"><span>결제 상태</span><strong>{{ order.payment_status }}</strong></div>
+          <div class="metric"><span>주문 상태</span><strong>{{ order.order_status }}</strong></div>
+          <div class="metric"><span>결제 Provider</span><strong>{{ order.payment_provider or "MANUAL" }}</strong></div>
+          <div class="metric"><span>결제 참조번호</span><strong>{{ order.payment_reference or "-" }}</strong></div>
+        </div>
+        {% if order.payment_note %}
+          <p><strong>결제 메모:</strong> {{ order.payment_note }}</p>
+        {% endif %}
+        {% if order.paid_at %}
+          <p><strong>결제 완료일:</strong> {{ order.paid_at }}</p>
+        {% endif %}
+        {% if order.canceled_at %}
+          <p><strong>취소일:</strong> {{ order.canceled_at }}</p>
+        {% endif %}
+      </section>
+
+      {% if payment_events %}
+        <section class="panel">
+          <h2>결제 이벤트 이력</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>시간</th>
+                <th>이벤트</th>
+                <th>상태</th>
+                <th>Provider</th>
+                <th>참조번호</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for event in payment_events %}
+                <tr>
+                  <td>{{ event.created_at }}</td>
+                  <td>{{ event.event_type }}</td>
+                  <td><span class="status {{ event.payment_status | lower }}">{{ event.payment_status }}</span></td>
+                  <td>{{ event.provider or "-" }}</td>
+                  <td>{{ event.provider_reference or "-" }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        </section>
+      {% endif %}
+    {% endif %}
+
+    <section class="panel">
+      <h2>접근 권한</h2>
+      <p>{{ access.message }}</p>
+      <div class="grid">
+        <div class="metric">
+          <span>샘플 다운로드</span>
+          <strong>{{ "가능" if access.sample_download else "대기" }}</strong>
+        </div>
+        <div class="metric">
+          <span>다운로드 잔여</span>
+          {% if access.download %}
+            <strong>{{ access.download.remaining_downloads }} / {{ access.download.sample_download_limit }}</strong>
+          {% else %}
+            <strong>-</strong>
+          {% endif %}
+        </div>
+        <div class="metric">
+          <span>API 키</span>
+          <strong>{{ "발급됨" if access.api_key_issued else "미발급" }}</strong>
+        </div>
+        <div class="metric">
+          <span>API 사용</span>
+          <strong>{{ "가능" if access.api_available else "대기" }}</strong>
+        </div>
+      </div>
+      <div class="actions">
+        {% if access.sample_download and product %}
+          <a class="button" href="{{ url_for('product_sample', product_id=purchase.product_id) }}">샘플 다운로드</a>
+        {% endif %}
+        {% if current_user.id == purchase.buyer_id and access.sample_download and not api_key %}
+          <form action="{{ url_for('web_issue_api_key', request_id=purchase.id) }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit">API 키 발급</button>
+          </form>
+        {% endif %}
+        {% if product %}
+          <a class="button secondary" href="{{ url_for('web_product_detail', product_id=purchase.product_id) }}">상품 상세</a>
+        {% endif %}
+      </div>
+    </section>
+
+    <section class="panel">
+      <h2>요청 정보</h2>
+      <p><strong>구매자:</strong> {{ purchase.buyer_name }} · {{ purchase.buyer_email }}</p>
+      <p><strong>요청 메시지:</strong> {{ purchase.message or "없음" }}</p>
+      <p><strong>검토 메모:</strong> {{ purchase.review_note or "없음" }}</p>
+      <p><strong>요청일:</strong> {{ purchase.created_at }}</p>
+    </section>
+
+    {% if current_user.role == "ADMIN" %}
+      <section class="panel">
+        <h2>관리자 작업</h2>
+        <form action="{{ url_for('web_admin_update_purchase_download_limit', request_id=purchase.id) }}" method="post">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label for="sample_download_limit">샘플 다운로드 한도</label>
+          <input id="sample_download_limit" name="sample_download_limit" type="number" min="0" value="{{ purchase.sample_download_limit or 0 }}">
+          <button type="submit">한도 저장</button>
+        </form>
+
+        {% if order %}
+          <form action="{{ url_for('web_admin_update_order_payment_status', order_id=order.id) }}" method="post" style="margin-top: 16px">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <input type="hidden" name="next" value="{{ request.path }}">
+            <label for="payment_status">결제 상태</label>
+            <select id="payment_status" name="payment_status">
+              {% for status in ["PENDING", "PAYMENT_REQUESTED", "PAID", "FAILED", "CANCELED"] %}
+                <option value="{{ status }}" {% if order.payment_status == status %}selected{% endif %}>{{ status }}</option>
+              {% endfor %}
+            </select>
+            <label for="payment_note">결제 메모</label>
+            <textarea id="payment_note" name="payment_note" rows="3" placeholder="입금 확인, 결제 실패 사유 등 운영 메모를 남깁니다.">{{ order.payment_note or "" }}</textarea>
+            <label for="payment_provider">결제 Provider</label>
+            <input id="payment_provider" name="payment_provider" type="text" value="{{ order.payment_provider or 'MANUAL' }}" placeholder="예: MANUAL, TOSS, NICEPAY">
+            <label for="payment_reference">결제 참조번호</label>
+            <input id="payment_reference" name="payment_reference" type="text" value="{{ order.payment_reference or '' }}" placeholder="PG 거래 ID 또는 입금 확인 번호">
+            <button type="submit">결제 상태 저장</button>
+          </form>
+        {% endif %}
+
+        <div class="actions">
+          <form action="{{ url_for('web_admin_approve_purchase', request_id=purchase.id) }}" method="post" style="display:inline">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <button type="submit">승인</button>
+          </form>
+        </div>
+        <form action="{{ url_for('web_admin_reject_purchase', request_id=purchase.id) }}" method="post" style="margin-top: 8px">
+          <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+          <label for="review_note">반려 사유</label>
+          <textarea id="review_note" name="review_note" rows="3" placeholder="반려 사유를 입력하세요.">{{ purchase.review_note or "" }}</textarea>
+          <button class="danger" type="submit">반려</button>
+        </form>
+      </section>
+    {% endif %}
+
+    <div class="actions">
+      {% if current_user.role == "ADMIN" %}
+        <a class="button secondary" href="{{ url_for('web_admin_purchases') }}">관리자 구매 목록</a>
+      {% elif current_user.id == purchase.seller_id %}
+        <a class="button secondary" href="{{ url_for('web_seller_purchases') }}">판매자 구매 요청</a>
+      {% else %}
+        <a class="button secondary" href="{{ url_for('user_dashboard') }}">내 대시보드</a>
+      {% endif %}
+    </div>
+  </div>
+{% endblock %}

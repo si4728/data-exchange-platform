@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+
+{% block content %}
+  {% set summary = report.review_summary or {} %}
+
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">VALIDATION REPORT</div>
+        <h1>검증 리포트</h1>
+        <p class="muted">{{ report.metadata.data_name }} · {{ report.format.filename }}</p>
+      </div>
+      <div class="tag-row">
+        <span class="status {{ (report.dataset_status or report.status) | lower }}">{{ report.dataset_status or report.status }}</span>
+        {% if summary.recommendation %}
+          <span class="tag quality">{{ summary.recommendation }}</span>
+        {% endif %}
+      </div>
+    </div>
+
+    <section class="panel">
+      <h2>데이터 기본 정보</h2>
+      <p><strong>데이터 이름:</strong> {{ report.metadata.data_name }}</p>
+      <p><strong>내용 설명:</strong> {{ report.metadata.description or "설명 없음" }}</p>
+      {% if report.review_note %}
+        <p><strong>관리자 검토 메모:</strong> {{ report.review_note }}</p>
+      {% endif %}
+    </section>
+
+    {% if resubmission_context and resubmission_context.has_history %}
+      <section class="panel">
+        <h2>보완 제출 이력</h2>
+        {% if resubmission_context.parent %}
+          <p>
+            <strong>원본 반려 데이터:</strong>
+            <a href="{{ url_for('web_dataset_report', dataset_id=resubmission_context.parent.id) }}">
+              #{{ resubmission_context.parent.id }} {{ resubmission_context.parent.data_name or resubmission_context.parent.filename }}
+            </a>
+            <span class="status {{ resubmission_context.parent.status | lower }}">{{ resubmission_context.parent.status }}</span>
+          </p>
+          {% if resubmission_context.parent.review_note %}
+            <p class="muted">원본 반려 사유: {{ resubmission_context.parent.review_note }}</p>
+          {% endif %}
+        {% endif %}
+
+        {% if resubmission_context.children %}
+          <table>
+            <thead>
+              <tr>
+                <th>ID</th>
+                <th>데이터</th>
+                <th>상태</th>
+                <th>품질</th>
+                <th>업로드일</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for child in resubmission_context.children %}
+                <tr>
+                  <td>#{{ child.id }}</td>
+                  <td><a href="{{ url_for('web_dataset_report', dataset_id=child.id) }}">{{ child.data_name or child.filename }}</a></td>
+                  <td><span class="status {{ child.status | lower }}">{{ child.status }}</span></td>
+                  <td>{{ child.quality_score }}</td>
+                  <td>{{ child.created_at }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+      </section>
+    {% endif %}
+
+    <div class="grid">
+      <div class="metric">
+        <span>품질 등급</span>
+        <strong>{{ report.quality.grade }}</strong>
+      </div>
+      <div class="metric">
+        <span>품질 점수</span>
+        <strong>{{ report.quality.score }}</strong>
+      </div>
+      <div class="metric">
+        <span>PII 위험</span>
+        <strong>{{ report.pii.pii_risk_score }}</strong>
+      </div>
+      <div class="metric">
+        <span>중복 행 비율</span>
+        <strong>{{ report.duplicate.duplicate_row_rate | default(0) }}%</strong>
+      </div>
+    </div>
+
+    <section class="panel">
+      <h2>관리자 승인 판단 요약</h2>
+      {% if summary %}
+        <div class="grid">
+          <div class="metric">
+            <span>권장 판단</span>
+            <strong>{{ summary.recommendation }}</strong>
+          </div>
+          <div class="metric">
+            <span>평균 NULL</span>
+            <strong>{{ summary.avg_null_rate }}%</strong>
+          </div>
+          <div class="metric">
+            <span>PII 컬럼</span>
+            <strong>{{ summary.pii_column_count }}</strong>
+          </div>
+          <div class="metric">
+            <span>고결측 컬럼</span>
+            <strong>{{ summary.high_null_column_count }}</strong>
+          </div>
+        </div>
+        <p class="muted">{{ summary.summary_text }}</p>
+
+        {% if summary.findings %}
+          <table>
+            <thead>
+              <tr>
+                <th>위험도</th>
+                <th>항목</th>
+                <th>설명</th>
+              </tr>
+            </thead>
+            <tbody>
+              {% for finding in summary.findings %}
+                <tr>
+                  <td><span class="status {{ finding.severity | lower }}">{{ finding.severity }}</span></td>
+                  <td>{{ finding.title }}</td>
+                  <td>{{ finding.message }}</td>
+                </tr>
+              {% endfor %}
+            </tbody>
+          </table>
+        {% endif %}
+
+        {% if summary.pii_columns %}
+          <p><strong>PII 의심 컬럼:</strong> {{ summary.pii_columns | join(", ") }}</p>
+        {% endif %}
+        {% if summary.high_null_columns %}
+          <p><strong>NULL 50% 이상 컬럼:</strong> {{ summary.high_null_columns | join(", ") }}</p>
+        {% endif %}
+
+        {% if current_user and current_user.role == "ADMIN" %}
+          <h2>승인 전 확인 체크리스트</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>확인 항목</th>
+                <th>현재 값</th>
+                <th>검토 기준</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>개인정보 위험</td>
+                <td>{{ report.pii.pii_risk_score }}점 · {{ summary.pii_column_count }}개 컬럼</td>
+                <td>PII 위험이 높으면 판매자에게 비식별화 또는 삭제 요청</td>
+              </tr>
+              <tr>
+                <td>중복 상태</td>
+                <td>{{ report.duplicate.status }} · {{ report.duplicate.duplicate_row_rate | default(0) }}%</td>
+                <td>완전 중복 또는 대부분 중복이면 반려 검토</td>
+              </tr>
+              <tr>
+                <td>결측률</td>
+                <td>평균 {{ summary.avg_null_rate }}% · 고결측 {{ summary.high_null_column_count }}개</td>
+                <td>핵심 컬럼 결측이 많으면 설명 보완 또는 반려 검토</td>
+              </tr>
+              <tr>
+                <td>품질 점수</td>
+                <td>{{ report.quality.score }}점 · {{ report.quality.grade }}</td>
+                <td>70점 이상은 승인 후보, 60점 미만은 반려 또는 보완 권장</td>
+              </tr>
+            </tbody>
+          </table>
+        {% endif %}
+      {% else %}
+        <p class="muted">이전 리포트에는 승인 판단 요약이 없습니다. 새로 업로드되는 데이터부터 표시됩니다.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel">
+      <h2>처리 단계</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>시간</th>
+            <th>단계</th>
+            <th>상태</th>
+            <th>내용</th>
+            <th>상세</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for step in processing_steps %}
+            <tr>
+              <td>{{ step.created_at }}</td>
+              <td>{{ step.step_name }}</td>
+              <td><span class="status {{ step.status | lower }}">{{ step.status }}</span></td>
+              <td>{{ step.message }}</td>
+              <td><code>{{ step.detail_json }}</code></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="5" class="muted">처리 단계 기록이 없습니다.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>포맷</h2>
+      <p><strong>감지 포맷:</strong> {{ report.format.detected_format }}</p>
+      <p><strong>감지 이유:</strong> {{ report.format.detection_reason }}</p>
+      <p><strong>헤더 여부:</strong> {{ report.format.has_header }}</p>
+      {% if report.format.warnings %}
+        <p><strong>경고:</strong> {{ report.format.warnings | join(", ") }}</p>
+      {% endif %}
+    </section>
+
+    <div class="grid">
+      <div class="metric">
+        <span>행</span>
+        <strong>{{ report.schema.row_count }}</strong>
+      </div>
+      <div class="metric">
+        <span>컬럼</span>
+        <strong>{{ report.schema.column_count }}</strong>
+      </div>
+      <div class="metric">
+        <span>중복 상태</span>
+        <strong>{{ report.duplicate.status }}</strong>
+      </div>
+      <div class="metric">
+        <span>총 PII 탐지</span>
+        <strong>{{ report.pii.total_pii_count }}</strong>
+      </div>
+    </div>
+
+    <section class="panel">
+      <h2>개인정보 탐지</h2>
+      <p><strong>총 탐지 수:</strong> {{ report.pii.total_pii_count }}</p>
+      <p><strong>위험 점수:</strong> {{ report.pii.pii_risk_score }}</p>
+      <p><strong>유형별 탐지:</strong> <code>{{ report.pii.pii_counts }}</code></p>
+      <p class="muted">이 정보는 판매자 본인과 관리자 검토 화면에서만 표시됩니다.</p>
+    </section>
+
+    <section class="panel">
+      <h2>중복 검사</h2>
+      <p><strong>파일 완전 중복:</strong> {{ report.duplicate.is_file_duplicate | default(false) }}</p>
+      <p><strong>검사 행 수:</strong> {{ report.duplicate.row_count | default(0) }}</p>
+      <p><strong>중복 행 수:</strong> {{ report.duplicate.duplicate_row_count | default(0) }}</p>
+      <p><strong>중복 행 비율:</strong> {{ report.duplicate.duplicate_row_rate | default(0) }}%</p>
+    </section>
+
+    <section class="panel">
+      <h2>품질 점수 근거</h2>
+      {% if report.quality.components %}
+        <div class="grid">
+          <div class="metric">
+            <span>완전성</span>
+            <strong>{{ report.quality.components.completeness_score }}</strong>
+          </div>
+          <div class="metric">
+            <span>규모</span>
+            <strong>{{ report.quality.components.volume_score }}</strong>
+          </div>
+          <div class="metric">
+            <span>구조</span>
+            <strong>{{ report.quality.components.structure_score }}</strong>
+          </div>
+          <div class="metric">
+            <span>PII 감점</span>
+            <strong>{{ report.quality.components.pii_penalty }}</strong>
+          </div>
+          <div class="metric">
+            <span>중복 감점</span>
+            <strong>{{ report.quality.components.duplicate_penalty }}</strong>
+          </div>
+        </div>
+      {% else %}
+        <p class="muted">품질 점수 상세 근거가 없습니다.</p>
+      {% endif %}
+    </section>
+
+    <section class="panel">
+      <h2>컬럼별 통계</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>컬럼명</th>
+            <th>타입</th>
+            <th>NULL 수</th>
+            <th>NULL 비율</th>
+            <th>고유값</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for column in report.schema.columns %}
+            <tr>
+              <td>{{ column.column_name }}</td>
+              <td>{{ column.detected_type }}</td>
+              <td>{{ column.null_count }}</td>
+              <td>{{ column.null_rate }}%</td>
+              <td>{{ column.unique_count }}</td>
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+
+    <section class="panel">
+      <h2>보관 정책</h2>
+      <p><strong>업로드 원본 삭제:</strong> {{ report.retention.uploaded_file_deleted }}</p>
+      <p><strong>표준화 파일 삭제:</strong> {{ report.retention.normalized_file_deleted }}</p>
+      <p><strong>샘플 보관:</strong> {{ report.retention.sample_retained }}</p>
+      {% if report.sample %}
+        <p><strong>샘플:</strong> <code>{{ report.sample.sample_path }}</code></p>
+      {% endif %}
+    </section>
+
+    <div class="actions">
+      {% if current_user and current_user.role == "ADMIN" %}
+        <a class="button" href="{{ url_for('web_admin_list_datasets') }}">관리자 목록</a>
+      {% elif report.dataset_status == "REJECTED" %}
+        <a class="button" href="{{ url_for('web_resubmit_dataset', dataset_id=report.dataset_id) }}">보완 재업로드</a>
+      {% else %}
+        <a class="button" href="{{ url_for('user_dashboard') }}">내 대시보드</a>
+      {% endif %}
+      <a class="button secondary" href="{{ url_for('index') }}">다른 파일 업로드</a>
+    </div>
+  </div>
+{% endblock %}

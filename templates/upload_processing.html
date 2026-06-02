@@ -1,0 +1,136 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>데이터 처리 중</h1>
+  <p class="muted">업로드한 파일을 단계별로 점검하고 CSV 표준화, 통계 계산, 개인정보 탐지, 리포트 저장을 진행하고 있습니다.</p>
+
+  <div id="failure-box" class="error" style="display: {% if job.status == 'FAILED' %}block{% else %}none{% endif %};">
+    <strong id="failure-title">{{ job.error_title or "업로드 처리 중 오류가 발생했습니다." }}</strong>
+    <p id="failure-action">{{ job.error_action or "파일 형식, 구분자, 인코딩을 확인한 뒤 다시 업로드해 주세요." }}</p>
+    {% if job.error %}
+      <p class="muted">상세 원인: <code id="failure-detail">{{ job.error }}</code></p>
+    {% else %}
+      <p class="muted">상세 원인: <code id="failure-detail">-</code></p>
+    {% endif %}
+  </div>
+
+  <section class="panel">
+    <div class="grid">
+      <div class="metric">
+        <span>작업 ID</span>
+        <strong style="font-size: 14px">{{ job_id }}</strong>
+      </div>
+      <div class="metric">
+        <span>상태</span>
+        <strong id="job-status">{{ job.status }}</strong>
+      </div>
+      <div class="metric">
+        <span>파일</span>
+        <strong style="font-size: 14px">{{ job.filename }}</strong>
+      </div>
+    </div>
+  </section>
+
+  <h2>처리 단계</h2>
+  <table>
+    <thead>
+      <tr>
+        <th>시간</th>
+        <th>단계</th>
+        <th>상태</th>
+        <th>내용</th>
+        <th>상세</th>
+      </tr>
+    </thead>
+    <tbody id="step-body">
+      <tr><td colspan="5" class="muted">처리 상태를 불러오는 중입니다.</td></tr>
+    </tbody>
+  </table>
+
+  <div class="actions">
+    <a class="button" href="{{ url_for('index') }}">다시 업로드</a>
+    <a class="button secondary" href="{{ url_for('user_dashboard') }}">내 대시보드</a>
+  </div>
+
+  <script>
+    const statusUrl = "{{ url_for('web_upload_status', job_id=job_id) }}";
+
+    function appendCell(row, text, className) {
+      const cell = document.createElement("td");
+      if (className) {
+        cell.className = className;
+      }
+      cell.textContent = text || "";
+      row.appendChild(cell);
+      return cell;
+    }
+
+    function renderDetail(detailJson) {
+      if (!detailJson) {
+        return "{}";
+      }
+      try {
+        const parsed = JSON.parse(detailJson);
+        return JSON.stringify(parsed, null, 2);
+      } catch (error) {
+        return detailJson;
+      }
+    }
+
+    function renderFailure(data) {
+      const failureBox = document.getElementById("failure-box");
+      if (data.status !== "FAILED") {
+        failureBox.style.display = "none";
+        return;
+      }
+      failureBox.style.display = "block";
+      document.getElementById("failure-title").textContent = data.error_title || "업로드 처리 중 오류가 발생했습니다.";
+      document.getElementById("failure-action").textContent = data.error_action || "파일 형식, 구분자, 인코딩을 확인한 뒤 다시 업로드해 주세요.";
+      document.getElementById("failure-detail").textContent = data.error || "-";
+    }
+
+    function renderSteps(steps) {
+      const body = document.getElementById("step-body");
+      body.innerHTML = "";
+      if (!steps.length) {
+        body.innerHTML = '<tr><td colspan="5" class="muted">아직 기록된 단계가 없습니다.</td></tr>';
+        return;
+      }
+      for (const step of steps) {
+        const row = document.createElement("tr");
+        appendCell(row, step.created_at || "");
+        appendCell(row, step.step_name || step.step_key || "");
+
+        const statusCell = appendCell(row, "");
+        const statusBadge = document.createElement("span");
+        statusBadge.className = `status ${(step.status || "").toLowerCase()}`;
+        statusBadge.textContent = step.status || "";
+        statusCell.appendChild(statusBadge);
+
+        appendCell(row, step.message || "");
+        const detailCell = appendCell(row, "");
+        const code = document.createElement("code");
+        code.textContent = renderDetail(step.detail_json || "{}");
+        detailCell.appendChild(code);
+        body.appendChild(row);
+      }
+    }
+
+    async function pollStatus() {
+      const response = await fetch(statusUrl);
+      const data = await response.json();
+      document.getElementById("job-status").textContent = data.status;
+      renderFailure(data);
+      renderSteps(data.steps || []);
+      if (data.status === "DONE" && data.report_url) {
+        window.location.href = data.report_url;
+        return;
+      }
+      if (data.status !== "FAILED") {
+        window.setTimeout(pollStatus, 1200);
+      }
+    }
+
+    pollStatus();
+  </script>
+{% endblock %}

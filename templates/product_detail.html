@@ -1,0 +1,188 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">DATASET DETAIL</div>
+        <h1>{{ product.title }}</h1>
+        <p class="muted">{{ product.description }}</p>
+        <div class="tag-row">
+          {% if product.category %}
+            <span class="tag neutral">{{ product.category }}</span>
+          {% endif %}
+          <span class="tag format">{{ product.file_type }}</span>
+          <span class="tag neutral">{{ "무료" if product.pricing_model == "FREE" else "일회성 구매" }}</span>
+          <span class="tag quality">품질 {{ product.quality_score }}</span>
+          <span class="status {{ product.status | lower }}">{{ product.status }}</span>
+        </div>
+      </div>
+      <div class="actions">
+        {% if product.status == "ACTIVE" %}
+          {% if is_favorite %}
+            <form action="{{ url_for('web_remove_product_favorite', product_id=product.id) }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="next" value="{{ request.path }}">
+              <button class="secondary" type="submit">관심 해제</button>
+            </form>
+          {% else %}
+            <form action="{{ url_for('web_add_product_favorite', product_id=product.id) }}" method="post">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <input type="hidden" name="next" value="{{ request.path }}">
+              <button class="secondary" type="submit">관심 저장</button>
+            </form>
+          {% endif %}
+        {% endif %}
+        <a class="button secondary" href="{{ url_for('market') }}">마켓으로 돌아가기</a>
+      </div>
+    </div>
+
+    <div class="detail-layout">
+      <div>
+        <div class="grid">
+          <div class="metric"><span>행</span><strong>{{ product.row_count }}</strong></div>
+          <div class="metric"><span>컬럼</span><strong>{{ product.column_count }}</strong></div>
+          <div class="metric"><span>품질 점수</span><strong>{{ product.quality_score }}</strong></div>
+          {% if can_view_sensitive %}
+            <div class="metric"><span>PII 위험</span><strong>{{ product.pii_risk_score }}</strong></div>
+          {% endif %}
+        </div>
+
+        {% if product.report and product.report.schema and product.report.schema.columns %}
+          <section class="panel" style="margin-top: 18px">
+            <h2>컬럼 통계</h2>
+            <table>
+              <thead>
+                <tr>
+                  <th>컬럼명</th>
+                  <th>타입</th>
+                  <th>NULL 수</th>
+                  <th>NULL 비율</th>
+                  <th>고유값</th>
+                </tr>
+              </thead>
+              <tbody>
+                {% for column in product.report.schema.columns[:10] %}
+                  <tr>
+                    <td>{{ column.column_name }}</td>
+                    <td>{{ column.detected_type }}</td>
+                    <td>{{ column.null_count }}</td>
+                    <td>{{ column.null_rate }}%</td>
+                    <td>{{ column.unique_count }}</td>
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          </section>
+        {% endif %}
+
+        <section class="panel" style="margin-top: 18px">
+          <h2>샘플 미리보기</h2>
+          {% if sample_preview.rows %}
+            <table>
+              <thead>
+                <tr>
+                  {% for column in sample_preview.columns %}
+                    <th>{{ column }}</th>
+                  {% endfor %}
+                </tr>
+              </thead>
+              <tbody>
+                {% for row in sample_preview.rows %}
+                  <tr>
+                    {% for column in sample_preview.columns %}
+                      <td>{{ row[column] }}</td>
+                    {% endfor %}
+                  </tr>
+                {% endfor %}
+              </tbody>
+            </table>
+          {% else %}
+            <p class="muted">샘플을 찾을 수 없습니다.</p>
+          {% endif %}
+        </section>
+
+        <section class="panel" style="margin-top: 18px">
+          <h2>라이선스 및 사용 조건</h2>
+          <p><strong>{{ product.license_name or "Standard Data License" }}</strong></p>
+          <p class="muted">{{ product.usage_terms or "구매 승인 후 내부 분석 목적으로 사용할 수 있으며, 원본 데이터 재판매와 개인정보 재식별 시도는 금지됩니다." }}</p>
+        </section>
+      </div>
+
+      <aside class="panel side-panel">
+        <h2>데이터 카드</h2>
+        <div class="tag-row">
+          {% if product.category %}
+            <span class="tag neutral">{{ product.category }}</span>
+          {% endif %}
+          <span class="tag format">{{ product.file_type }}</span>
+          <span class="tag neutral">{{ "무료" if product.pricing_model == "FREE" else "일회성 구매" }}</span>
+          <span class="tag neutral">{{ "{:,}".format(product.price or 0) }}원</span>
+        </div>
+        {% if product.tags %}
+          <div class="tag-row" style="margin-top: 10px">
+            {% for tag in product.tags.split(",") %}
+              <span class="tag neutral">{{ tag.strip() }}</span>
+            {% endfor %}
+          </div>
+        {% endif %}
+        <p><strong>업로드일</strong><br>{{ product.created_at }}</p>
+        <p><strong>품질 등급</strong><br>{{ product.report.quality.grade if product.report and product.report.quality else "-" }}</p>
+        <p><strong>중복 상태</strong><br>{{ product.report.duplicate.status if product.report and product.report.duplicate else "-" }}</p>
+        <p><strong>샘플 행 수</strong><br>{{ product.report.sample.sample_rows if product.report and product.report.sample else "-" }}</p>
+        {% if can_view_sensitive %}
+          <p><strong>개인정보 탐지</strong><br>{{ product.report.pii.total_pii_count if product.report and product.report.pii else "-" }}건</p>
+        {% endif %}
+
+        <div class="actions">
+          {% if current_user and (current_user.role == "ADMIN" or current_user.id == product.seller_id) %}
+            <a class="button" href="{{ url_for('web_edit_product', product_id=product.id) }}">상품 수정</a>
+            {% if product.status == "ACTIVE" %}
+              <form action="{{ url_for('web_hide_product', product_id=product.id) }}" method="post" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button class="danger" type="submit">비공개</button>
+              </form>
+            {% else %}
+              <form action="{{ url_for('web_publish_product', product_id=product.id) }}" method="post" style="display:inline">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                <button type="submit">다시 게시</button>
+              </form>
+            {% endif %}
+          {% endif %}
+
+          {% if product.status == "ACTIVE" and can_download_sample %}
+            <a class="button" href="{{ url_for('product_sample', product_id=product.id) }}">샘플 다운로드</a>
+          {% elif product.status != "ACTIVE" %}
+            <span class="button secondary">비공개 상품</span>
+          {% else %}
+            <span class="button secondary">구매 승인 후 다운로드</span>
+          {% endif %}
+        </div>
+      </aside>
+    </div>
+
+    {% if current_user and current_user.role != "ADMIN" and current_user.id != product.seller_id %}
+      <section class="panel">
+        <h2>구매 요청</h2>
+        {% if purchase_request %}
+          <p><strong>현재 요청 상태:</strong> <span class="status {{ purchase_request.status | lower }}">{{ purchase_request.status }}</span></p>
+          {% if purchase_request.status == "APPROVED" %}
+            <p class="muted">구매가 승인되어 샘플 다운로드와 API 발급 권한을 사용할 수 있습니다.</p>
+          {% else %}
+            <p class="muted">관리자 검토 후 승인되면 접근 권한이 열립니다.</p>
+          {% endif %}
+        {% else %}
+          <form action="{{ url_for('web_purchase_product', product_id=product.id) }}" method="post">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+            <label for="message">요청 메시지</label>
+            <textarea id="message" name="message" rows="4" placeholder="사용 목적이나 문의 내용을 입력하세요."></textarea>
+
+            <div class="actions">
+              <button type="submit">구매 요청하기</button>
+            </div>
+          </form>
+        {% endif %}
+      </section>
+    {% endif %}
+  </div>
+{% endblock %}

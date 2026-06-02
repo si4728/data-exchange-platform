@@ -1,0 +1,155 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">DATASET MARKET</div>
+        <h1>데이터 마켓</h1>
+        <p class="muted">승인된 데이터 상품을 검색하고 포맷, 카테고리, 태그, 품질 점수 기준으로 탐색합니다.</p>
+      </div>
+      <div class="tag-row">
+        <span class="tag neutral">총 {{ pagination.total }}개</span>
+        <span class="tag quality">검증 완료</span>
+      </div>
+    </div>
+
+    <section class="filter-panel">
+      <form action="{{ url_for('market') }}" method="get">
+        <div class="search-row">
+          <div>
+            <label for="q">검색어</label>
+            <input id="q" name="q" type="search" value="{{ filters.query or '' }}" placeholder="데이터명, 설명, 태그로 검색">
+          </div>
+
+          <div>
+            <label for="category">카테고리</label>
+            <select id="category" name="category">
+              <option value="" {% if not filters.category %}selected{% endif %}>전체</option>
+              {% for category in ["Tabular", "Text", "Document", "IoT", "Finance", "Public", "Healthcare", "Commerce", "Research", "Other"] %}
+                <option value="{{ category }}" {% if filters.category == category %}selected{% endif %}>{{ category }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="file_type">포맷</label>
+            <select id="file_type" name="file_type">
+              <option value="" {% if not filters.file_type %}selected{% endif %}>전체</option>
+              <option value="CSV" {% if filters.file_type == "CSV" %}selected{% endif %}>CSV</option>
+              <option value="JSON" {% if filters.file_type == "JSON" %}selected{% endif %}>JSON</option>
+              <option value="JSON_LINES" {% if filters.file_type == "JSON_LINES" %}selected{% endif %}>JSON Lines</option>
+              <option value="DELIMITED_TEXT" {% if filters.file_type == "DELIMITED_TEXT" %}selected{% endif %}>구분자 텍스트</option>
+              <option value="PLAIN_TEXT" {% if filters.file_type == "PLAIN_TEXT" %}selected{% endif %}>일반 텍스트</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="min_quality_score">최소 품질</label>
+            <input id="min_quality_score" name="min_quality_score" type="number" min="0" max="100" step="1" value="{{ filters.min_quality_score if filters.min_quality_score is not none else '' }}" placeholder="70">
+          </div>
+
+          <div>
+            <label for="tag">태그</label>
+            <input id="tag" name="tag" type="search" value="{{ filters.tag or '' }}" placeholder="mqtt">
+          </div>
+
+          <div>
+            <label for="sort">정렬</label>
+            <select id="sort" name="sort">
+              <option value="newest" {% if filters.sort == "newest" %}selected{% endif %}>최신순</option>
+              <option value="quality_desc" {% if filters.sort == "quality_desc" %}selected{% endif %}>품질 높은순</option>
+              <option value="rows_desc" {% if filters.sort == "rows_desc" %}selected{% endif %}>행 많은순</option>
+              <option value="price_asc" {% if filters.sort == "price_asc" %}selected{% endif %}>가격 낮은순</option>
+              <option value="price_desc" {% if filters.sort == "price_desc" %}selected{% endif %}>가격 높은순</option>
+              <option value="title_asc" {% if filters.sort == "title_asc" %}selected{% endif %}>이름순</option>
+            </select>
+          </div>
+
+          <button type="submit">검색</button>
+          <a class="button secondary" href="{{ url_for('market') }}">초기화</a>
+        </div>
+        <input type="hidden" name="per_page" value="{{ filters.per_page }}">
+      </form>
+    </section>
+
+    <div class="dataset-grid">
+      {% for product in products %}
+        <section class="dataset-card">
+          <div class="card-top">
+            {% if product.category %}
+              <span class="tag neutral">{{ product.category }}</span>
+            {% endif %}
+            <span class="tag format">{{ product.file_type }}</span>
+            <span class="tag quality">품질 {{ product.quality_score }}</span>
+            <span class="tag neutral">{{ product.status }}</span>
+          </div>
+
+          <h2><a href="{{ url_for('web_product_detail', product_id=product.id) }}">{{ product.title }}</a></h2>
+          <p class="muted">{{ product.description or "설명 없음" }}</p>
+
+          <div class="tag-row" style="margin-top: 10px">
+            <span class="tag neutral">{{ product.row_count }}행</span>
+            <span class="tag neutral">{{ product.column_count }}컬럼</span>
+            <span class="tag neutral">{{ "무료" if product.pricing_model == "FREE" else "일회성 구매" }}</span>
+            <span class="tag neutral">{{ product.price }}원</span>
+          </div>
+
+          {% if product.tags %}
+            <div class="tag-row" style="margin-top: 10px">
+              {% for tag in product.tags.split(",")[:5] %}
+                <span class="tag neutral">{{ tag.strip() }}</span>
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          <div class="card-meta">
+            <span>업로드 {{ product.created_at }}</span>
+            <div class="actions" style="margin-top: 0">
+              {% if product.id in favorite_product_ids %}
+                <form action="{{ url_for('web_remove_product_favorite', product_id=product.id) }}" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="next" value="{{ request.full_path }}">
+                  <button class="secondary" type="submit">저장 해제</button>
+                </form>
+              {% else %}
+                <form action="{{ url_for('web_add_product_favorite', product_id=product.id) }}" method="post">
+                  <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                  <input type="hidden" name="next" value="{{ request.full_path }}">
+                  <button class="secondary" type="submit">관심 저장</button>
+                </form>
+              {% endif %}
+              <a class="button" href="{{ url_for('web_product_detail', product_id=product.id) }}">샘플 보기</a>
+            </div>
+          </div>
+        </section>
+      {% else %}
+        <section class="panel">
+          <h2>검색 결과가 없습니다</h2>
+          <p class="muted">검색어 또는 필터를 조정한 뒤 다시 확인하세요.</p>
+          <div class="actions">
+            <a class="button secondary" href="{{ url_for('market') }}">전체 보기</a>
+          </div>
+        </section>
+      {% endfor %}
+    </div>
+
+    <section class="panel">
+      <div class="actions" style="justify-content: space-between; align-items: center; margin-top: 0">
+        <span class="muted">{{ pagination.page }} / {{ pagination.total_pages }} 페이지 · {{ pagination.total }}개 결과</span>
+        <div class="actions" style="margin-top: 0">
+          {% set prev_args = request.args.to_dict() %}
+          {% set _ = prev_args.update({"page": pagination.page - 1}) %}
+          {% set next_args = request.args.to_dict() %}
+          {% set _ = next_args.update({"page": pagination.page + 1}) %}
+          {% if pagination.has_prev %}
+            <a class="button secondary" href="{{ url_for('market', **prev_args) }}">이전</a>
+          {% endif %}
+          {% if pagination.has_next %}
+            <a class="button secondary" href="{{ url_for('market', **next_args) }}">다음</a>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}

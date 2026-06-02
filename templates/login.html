@@ -1,0 +1,29 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>로그인</h1>
+  <p class="muted">OBDM에서 데이터 업로드, 마켓 검색, 구매 요청, 관리자 검토 기능을 사용합니다.</p>
+
+  {% if error %}
+    <div class="error">{{ error }}</div>
+  {% endif %}
+
+  <section class="panel">
+    <form action="{{ url_for('login_post') }}" method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+
+      <label for="email">이메일</label>
+      <input id="email" name="email" type="email" required>
+
+      <label for="password">비밀번호</label>
+      <input id="password" name="password" type="password" required>
+
+      <div class="actions">
+        <button type="submit">로그인</button>
+        <a class="button secondary" href="{{ url_for('register') }}">회원가입</a>
+      </div>
+    </form>
+  </section>
+
+  <p class="muted">초기 관리자 계정: admin@example.com / admin1234</p>
+{% endblock %}

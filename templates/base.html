@@ -1,0 +1,621 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>OBDM</title>
+    <style>
+      :root {
+        color-scheme: light;
+        --bg: #f7f8fb;
+        --surface: #ffffff;
+        --surface-soft: #f1f5f9;
+        --surface-warm: #fff7ed;
+        --text: #172033;
+        --muted: #64748b;
+        --line: #dbe3ee;
+        --line-strong: #c8d3df;
+        --accent: #0f766e;
+        --accent-soft: #d9f3ef;
+        --blue: #2563eb;
+        --blue-soft: #dbeafe;
+        --amber: #b45309;
+        --amber-soft: #fef3c7;
+        --danger: #b91c1c;
+        --danger-soft: #fee2e2;
+        --success: #166534;
+        --success-soft: #dcfce7;
+        --shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
+      }
+
+      * { box-sizing: border-box; }
+
+      body {
+        margin: 0;
+        background: var(--bg);
+        color: var(--text);
+        font-family: Arial, "Malgun Gothic", sans-serif;
+        line-height: 1.5;
+      }
+
+      a {
+        color: inherit;
+        font-weight: 700;
+        text-decoration: none;
+      }
+
+      header {
+        position: sticky;
+        top: 0;
+        z-index: 20;
+        border-bottom: 1px solid var(--line);
+        background: rgba(255, 255, 255, 0.97);
+        box-shadow: 0 1px 0 rgba(15, 23, 42, 0.03);
+      }
+
+      .topbar,
+      .system-nav,
+      main,
+      .footer-inner {
+        max-width: 1240px;
+        margin: 0 auto;
+      }
+
+      .topbar {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 18px;
+        padding: 14px 24px 10px;
+      }
+
+      .brand-wrap {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+      }
+
+      .brand-copy {
+        display: flex;
+        flex-direction: column;
+        gap: 1px;
+      }
+
+      .brand {
+        color: var(--text);
+        font-size: 21px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .tagline {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 700;
+      }
+
+      .utility-nav {
+        display: flex;
+        align-items: center;
+        justify-content: flex-end;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+
+      .nav-link,
+      .nav-pill {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-height: 36px;
+        border: 1px solid transparent;
+        border-radius: 8px;
+        padding: 8px 11px;
+        color: #334155;
+        background: transparent;
+        white-space: nowrap;
+      }
+
+      .nav-link:hover,
+      .nav-pill:hover {
+        border-color: var(--line);
+        background: var(--surface-soft);
+      }
+
+      .nav-link.active,
+      .nav-pill.active {
+        border-color: #a7ded8;
+        background: var(--accent-soft);
+        color: var(--accent);
+      }
+
+      .system-nav {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(0, 1fr));
+        gap: 12px;
+        padding: 0 24px 14px;
+      }
+
+      .menu-group {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        background: #fbfdff;
+        padding: 10px;
+      }
+
+      .menu-title {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        margin-bottom: 8px;
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+        letter-spacing: 0;
+      }
+
+      .menu-items {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      main { padding: 32px 24px 58px; }
+
+      h1 { margin: 0 0 8px; font-size: 30px; letter-spacing: 0; }
+      h2 { margin: 28px 0 12px; font-size: 18px; letter-spacing: 0; }
+      .muted { color: var(--muted); }
+
+      .page-shell { display: grid; gap: 18px; }
+
+      .page-head {
+        display: flex;
+        align-items: flex-end;
+        justify-content: space-between;
+        gap: 18px;
+        border-bottom: 1px solid var(--line);
+        padding-bottom: 18px;
+      }
+
+      .page-kicker {
+        color: var(--accent);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .panel,
+      .dataset-card,
+      .resource-card {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        box-shadow: var(--shadow);
+      }
+
+      .panel { padding: 22px; }
+
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 14px;
+      }
+
+      .metric {
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: #fbfdff;
+      }
+
+      .metric span {
+        color: var(--muted);
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .metric strong {
+        display: block;
+        margin-top: 4px;
+        font-size: 22px;
+      }
+
+      .filter-panel {
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 16px;
+        box-shadow: var(--shadow);
+      }
+
+      .search-row {
+        display: grid;
+        grid-template-columns: minmax(0, 1.4fr) 160px 160px 140px 140px auto auto;
+        gap: 10px;
+        align-items: end;
+      }
+
+      label {
+        display: block;
+        margin: 16px 0 6px;
+        font-weight: 800;
+      }
+
+      input,
+      select,
+      textarea {
+        width: 100%;
+        border: 1px solid var(--line-strong);
+        border-radius: 8px;
+        padding: 10px 12px;
+        background: #fff;
+        color: var(--text);
+        font: inherit;
+      }
+
+      input:focus,
+      select:focus,
+      textarea:focus {
+        border-color: var(--accent);
+        outline: 3px solid var(--accent-soft);
+      }
+
+      textarea { resize: vertical; }
+
+      button,
+      .button {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        border: 0;
+        border-radius: 8px;
+        padding: 10px 14px;
+        background: var(--accent);
+        color: #fff;
+        font-weight: 800;
+        text-decoration: none;
+        cursor: pointer;
+        white-space: nowrap;
+      }
+
+      button:hover,
+      .button:hover { background: #115e59; }
+      .button.secondary,
+      button.secondary { background: #334155; }
+      .button.danger,
+      button.danger { background: var(--danger); }
+
+      .logout-button {
+        min-height: 36px;
+        padding: 8px 10px;
+        background: #334155;
+      }
+
+      .actions {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 18px;
+      }
+
+      table {
+        width: 100%;
+        border-collapse: collapse;
+        background: var(--surface);
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        overflow: hidden;
+      }
+
+      th,
+      td {
+        border-bottom: 1px solid var(--line);
+        padding: 10px 12px;
+        text-align: left;
+        vertical-align: top;
+      }
+
+      th {
+        background: #f1f5f9;
+        color: #475569;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .status,
+      .tag {
+        display: inline-flex;
+        align-items: center;
+        border-radius: 999px;
+        padding: 3px 9px;
+        background: var(--blue-soft);
+        color: var(--blue);
+        font-size: 12px;
+        font-weight: 800;
+      }
+
+      .tag.neutral { background: var(--surface-soft); color: #475569; }
+      .tag.quality { background: var(--accent-soft); color: var(--accent); }
+      .tag.format { background: var(--surface-warm); color: #9a3412; }
+
+      .status.review,
+      .status.rejected,
+      .status.requested,
+      .status.inactive,
+      .status.running {
+        background: var(--amber-soft);
+        color: var(--amber);
+      }
+
+      .status.approved,
+      .status.pass,
+      .status.active,
+      .status.completed,
+      .status.done {
+        background: var(--success-soft);
+        color: var(--success);
+      }
+
+      .status.suspended,
+      .status.failed {
+        background: var(--danger-soft);
+        color: var(--danger);
+      }
+
+      .badge {
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        min-width: 20px;
+        height: 20px;
+        border-radius: 999px;
+        padding: 0 6px;
+        background: var(--danger);
+        color: #fff;
+        font-size: 12px;
+        font-weight: 900;
+      }
+
+      .dataset-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+        gap: 14px;
+      }
+
+      .dataset-card {
+        display: flex;
+        flex-direction: column;
+        min-height: 245px;
+        padding: 16px;
+      }
+
+      .dataset-card h2 {
+        margin: 8px 0 6px;
+        font-size: 18px;
+      }
+
+      .card-top,
+      .card-meta,
+      .tag-row {
+        display: flex;
+        align-items: center;
+        flex-wrap: wrap;
+        gap: 6px;
+      }
+
+      .card-meta {
+        margin-top: auto;
+        padding-top: 14px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .compact-list {
+        margin: 8px 0;
+        padding-left: 18px;
+        color: var(--muted);
+        font-size: 13px;
+      }
+
+      .compact-list li { margin: 3px 0; }
+
+      .progress-track {
+        width: 100%;
+        height: 8px;
+        margin: 8px 0;
+        overflow: hidden;
+        border-radius: 999px;
+        background: #e2e8f0;
+      }
+
+      .progress-track span {
+        display: block;
+        height: 100%;
+        border-radius: inherit;
+        background: var(--accent);
+      }
+
+      .detail-layout {
+        display: grid;
+        grid-template-columns: minmax(0, 1fr) 320px;
+        gap: 18px;
+        align-items: start;
+      }
+
+      .side-panel {
+        position: sticky;
+        top: 146px;
+      }
+
+      .error {
+        margin: 16px 0;
+        border: 1px solid #fecaca;
+        border-radius: 8px;
+        background: #fef2f2;
+        color: var(--danger);
+        padding: 12px;
+      }
+
+      .notice {
+        margin-top: 18px;
+        border: 1px solid #bfdbfe;
+        border-radius: 8px;
+        background: #eff6ff;
+        color: #1e3a8a;
+        padding: 14px;
+      }
+
+      .notice p { margin: 6px 0; }
+
+      .check-row {
+        display: flex;
+        align-items: flex-start;
+        gap: 10px;
+        font-weight: 700;
+      }
+
+      .check-row input {
+        width: auto;
+        margin-top: 5px;
+      }
+
+      code { word-break: break-all; }
+
+      footer {
+        border-top: 1px solid var(--line);
+        background: var(--surface);
+      }
+
+      .footer-inner {
+        padding: 18px 24px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 12px;
+        color: var(--muted);
+      }
+
+      .footer-inner a {
+        color: var(--muted);
+        font-weight: 700;
+      }
+
+      @media (max-width: 960px) {
+        .topbar {
+          align-items: flex-start;
+          flex-direction: column;
+        }
+
+        .utility-nav { justify-content: flex-start; }
+        .system-nav { grid-template-columns: 1fr; }
+        .search-row { grid-template-columns: 1fr; }
+        .detail-layout { grid-template-columns: 1fr; }
+        .side-panel { position: static; }
+
+        table {
+          display: block;
+          overflow-x: auto;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <div class="topbar">
+        <div class="brand-wrap">
+          <div class="brand-copy">
+            <a class="brand" href="{{ url_for('market') if current_user else url_for('login') }}">OBDM</a>
+            <span class="tagline">Onbranding Data Market</span>
+          </div>
+        </div>
+        <div class="utility-nav">
+          {% if current_user %}
+            <a class="nav-link {% if request.path == '/market' %}active{% endif %}" href="{{ url_for('market') }}">마켓</a>
+            <a class="nav-link {% if request.path in ['/user/dashboard', '/web/admin'] %}active{% endif %}" href="{{ url_for('web_admin_dashboard') if current_user.role == 'ADMIN' else url_for('user_dashboard') }}">
+              알림
+              {% if notification_unread_count %}
+                <span class="badge">{{ notification_unread_count }}</span>
+              {% endif %}
+            </a>
+            <form action="{{ url_for('logout') }}" method="post" style="display:inline">
+              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+              <button type="submit" class="logout-button">로그아웃</button>
+            </form>
+          {% else %}
+            <a class="nav-link {% if request.path == '/login' %}active{% endif %}" href="{{ url_for('login') }}">로그인</a>
+            <a class="nav-link {% if request.path == '/register' %}active{% endif %}" href="{{ url_for('register') }}">회원가입</a>
+          {% endif %}
+        </div>
+      </div>
+
+      {% if current_user %}
+        <div class="system-nav">
+          <section class="menu-group">
+            <div class="menu-title">
+              {% if current_user.role == "ADMIN" %}
+                <span>운영 관리 시스템</span>
+              {% else %}
+                <span>사용자 데이터 시스템</span>
+              {% endif %}
+            </div>
+            <div class="menu-items">
+              {% if current_user.role == "ADMIN" %}
+                <a class="nav-pill {% if request.path == '/web/admin' %}active{% endif %}" href="{{ url_for('web_admin_dashboard') }}">운영 대시보드</a>
+                <a class="nav-pill {% if request.path.startswith('/web/admin/operations-checklist') %}active{% endif %}" href="{{ url_for('web_admin_operations_checklist') }}">운영 점검표</a>
+                <a class="nav-pill {% if request.path.startswith('/web/admin/datasets') %}active{% endif %}" href="{{ url_for('web_admin_list_datasets') }}">데이터 검토</a>
+                <a class="nav-pill {% if request.path.startswith('/web/admin/products') %}active{% endif %}" href="{{ url_for('web_admin_products') }}">상품 관리</a>
+                <a class="nav-pill {% if request.path.startswith('/web/admin/users') %}active{% endif %}" href="{{ url_for('web_admin_users') }}">사용자 관리</a>
+                <a class="nav-pill {% if request.path.startswith('/web/admin/purchases') %}active{% endif %}" href="{{ url_for('web_admin_purchases') }}">구매 승인</a>
+                <a class="nav-pill {% if request.path.startswith('/web/admin/settlements') %}active{% endif %}" href="{{ url_for('web_admin_settlements') }}">정산 관리</a>
+              {% else %}
+                <a class="nav-pill {% if request.path == '/user/dashboard' %}active{% endif %}" href="{{ url_for('user_dashboard') }}">내 대시보드</a>
+                <a class="nav-pill {% if request.path == '/' or request.path.startswith('/web/uploads') %}active{% endif %}" href="{{ url_for('index') }}">데이터 업로드</a>
+                <a class="nav-pill {% if request.path.startswith('/web/datasets') %}active{% endif %}" href="{{ url_for('user_dashboard') }}">내 데이터</a>
+                <a class="nav-pill {% if request.path.startswith('/web/products') %}active{% endif %}" href="{{ url_for('user_dashboard') }}">판매 상품</a>
+                <a class="nav-pill {% if request.path.startswith('/web/seller/reports') %}active{% endif %}" href="{{ url_for('web_seller_reports') }}">판매 리포트</a>
+                <a class="nav-pill {% if request.path.startswith('/web/seller/purchases') %}active{% endif %}" href="{{ url_for('web_seller_purchases') }}">판매 요청</a>
+                <a class="nav-pill {% if request.path.startswith('/web/orders') %}active{% endif %}" href="{{ url_for('web_buyer_orders') }}">주문/결제</a>
+                <a class="nav-pill {% if request.path.startswith('/web/purchases') %}active{% endif %}" href="{{ url_for('user_dashboard') }}">구매/API</a>
+              {% endif %}
+            </div>
+          </section>
+
+          <section class="menu-group">
+            <div class="menu-title">
+              {% if current_user.role == "ADMIN" %}
+                <span>로그·마켓 시스템</span>
+              {% else %}
+                <span>마켓 이용 시스템</span>
+              {% endif %}
+            </div>
+            <div class="menu-items">
+              <a class="nav-pill {% if request.path == '/market' %}active{% endif %}" href="{{ url_for('market') }}">데이터 마켓</a>
+              {% if current_user.role == "ADMIN" %}
+                <a class="nav-pill {% if request.path.startswith('/web/admin/downloads') %}active{% endif %}" href="{{ url_for('web_admin_downloads') }}">다운로드 로그</a>
+                <a class="nav-pill {% if request.path.startswith('/web/admin/api-keys') %}active{% endif %}" href="{{ url_for('web_admin_api_keys') }}">API 키</a>
+                <a class="nav-pill {% if request.path.startswith('/web/admin/api-usage') %}active{% endif %}" href="{{ url_for('web_admin_api_usage') }}">API 로그</a>
+                <a class="nav-pill {% if request.path.startswith('/web/admin/audit-logs') %}active{% endif %}" href="{{ url_for('web_admin_audit_logs') }}">감사 로그</a>
+              {% else %}
+                <a class="nav-pill {% if request.path.startswith('/web/products') %}active{% endif %}" href="{{ url_for('market') }}">상품 검색</a>
+                <a class="nav-pill {% if request.path.startswith('/web/orders') %}active{% endif %}" href="{{ url_for('web_buyer_orders') }}">구매 현황</a>
+                <a class="nav-pill" href="{{ url_for('user_dashboard') }}">API 키 관리</a>
+                <a class="nav-pill" href="{{ url_for('privacy_policy') }}">정책 확인</a>
+              {% endif %}
+            </div>
+          </section>
+        </div>
+      {% endif %}
+    </header>
+
+    <main>
+      {% block content %}{% endblock %}
+    </main>
+
+    <footer>
+      <div class="footer-inner">
+        <span>OBDM</span>
+        <a href="{{ url_for('privacy_policy') }}">개인정보 처리 안내</a>
+        <a href="{{ url_for('data_retention_policy') }}">데이터 삭제 정책</a>
+        <a href="{{ url_for('seller_terms') }}">판매자 약관</a>
+      </div>
+    </footer>
+  </body>
+</html>

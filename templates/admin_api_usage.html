@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>API 사용 로그</h1>
+  <p class="muted">API 키 기반 샘플 조회 이력을 최근 200건까지 확인합니다.</p>
+  <div class="actions">
+    <a class="button" href="{{ url_for('web_admin_export_report', report_name='api-usage') }}">API 사용 CSV 내보내기</a>
+  </div>
+
+  <table>
+    <thead>
+      <tr>
+        <th>ID</th>
+        <th>상품</th>
+        <th>사용자</th>
+        <th>키</th>
+        <th>엔드포인트</th>
+        <th>IP</th>
+        <th>일시</th>
+      </tr>
+    </thead>
+    <tbody>
+      {% for log in api_usage_logs %}
+        <tr>
+          <td>{{ log.id }}</td>
+          <td>{{ log.product_title }}</td>
+          <td>{{ log.user_name }}<br><span class="muted">{{ log.user_email }}</span></td>
+          <td><code>{{ log.token_prefix }}...</code></td>
+          <td><code>{{ log.endpoint }}</code></td>
+          <td>{{ log.ip_address }}</td>
+          <td>{{ log.created_at }}</td>
+        </tr>
+      {% else %}
+        <tr><td colspan="7">API 사용 로그가 없습니다.</td></tr>
+      {% endfor %}
+    </tbody>
+  </table>
+{% endblock %}

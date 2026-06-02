@@ -1,0 +1,81 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">SELLER REPORTS</div>
+        <h1>판매자 상품 운영 리포트</h1>
+        <p class="muted">상품별 구매 요청, 주문/결제, 샘플 다운로드, API 사용 현황을 확인합니다.</p>
+      </div>
+      <div class="actions">
+        <a class="button secondary" href="{{ url_for('user_dashboard') }}">내 대시보드</a>
+        <a class="button secondary" href="{{ url_for('web_seller_purchases') }}">구매 요청</a>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="metric"><span>판매 상품</span><strong>{{ totals.product_count }}</strong></div>
+      <div class="metric"><span>구매 요청</span><strong>{{ totals.purchase_request_count }}</strong></div>
+      <div class="metric"><span>주문</span><strong>{{ totals.order_count }}</strong></div>
+      <div class="metric"><span>총 주문액</span><strong>{{ "{:,}".format(totals.gross_amount or 0) }}원</strong></div>
+      <div class="metric"><span>결제 완료액</span><strong>{{ "{:,}".format(totals.paid_amount or 0) }}원</strong></div>
+      <div class="metric"><span>결제 대기액</span><strong>{{ "{:,}".format(totals.pending_amount or 0) }}원</strong></div>
+      <div class="metric"><span>샘플 다운로드</span><strong>{{ totals.sample_download_count }}</strong></div>
+      <div class="metric"><span>API 호출</span><strong>{{ totals.api_usage_count }}</strong></div>
+    </div>
+
+    <section class="panel">
+      <h2>상품별 운영 현황</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>상품</th>
+            <th>데이터</th>
+            <th>구매 요청</th>
+            <th>주문/결제</th>
+            <th>사용 현황</th>
+            <th>전환</th>
+            <th>상태</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for report in reports %}
+            <tr>
+              <td>
+                <a href="{{ url_for('web_product_detail', product_id=report.product_id) }}">{{ report.title }}</a>
+                <div class="muted">{{ "{:,}".format(report.price or 0) }}원 · {{ report.pricing_model }}</div>
+              </td>
+              <td>
+                {{ report.data_name or "-" }}
+                <div class="muted">{{ report.file_type }} · {{ report.row_count }}행 / {{ report.column_count }}컬럼 · 품질 {{ report.quality_score }}</div>
+              </td>
+              <td>
+                전체 {{ report.purchase_request_count }}
+                <div class="muted">대기 {{ report.requested_count }} · 승인 {{ report.approved_count }} · 완료 {{ report.completed_count }} · 반려 {{ report.rejected_count }}</div>
+              </td>
+              <td>
+                주문 {{ report.order_count }}
+                <div class="muted">총 {{ "{:,}".format(report.gross_amount or 0) }}원</div>
+                <div class="muted">완료 {{ "{:,}".format(report.paid_amount or 0) }}원 · 대기 {{ "{:,}".format(report.pending_amount or 0) }}원</div>
+              </td>
+              <td>
+                샘플 {{ report.sample_download_count }}
+                <div class="muted">API {{ report.api_usage_count }}</div>
+                <div class="muted">최근 다운로드 {{ report.latest_download_at or "-" }}</div>
+                <div class="muted">최근 API {{ report.latest_api_usage_at or "-" }}</div>
+              </td>
+              <td>
+                구매완료율 {{ report.conversion_rate }}%
+                <div class="muted">결제액 비율 {{ report.paid_rate }}%</div>
+              </td>
+              <td><span class="status {{ report.product_status | lower }}">{{ report.product_status }}</span></td>
+            </tr>
+          {% else %}
+            <tr><td colspan="7">판매 상품 운영 데이터가 없습니다.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
+{% endblock %}

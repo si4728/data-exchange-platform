@@ -1,0 +1,178 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">ADMIN PRODUCTS</div>
+        <h1>상품 관리</h1>
+        <p class="muted">마켓 상품을 검색하고 상태, 카테고리, 태그, 정렬 기준으로 관리합니다.</p>
+      </div>
+      <div class="tag-row">
+        <span class="tag neutral">총 {{ pagination.total }}개</span>
+      </div>
+    </div>
+
+    <section class="filter-panel">
+      <form action="{{ url_for('web_admin_products') }}" method="get">
+        <div class="grid">
+          <div>
+            <label for="q">검색어</label>
+            <input id="q" name="q" type="search" value="{{ filters.query or '' }}" placeholder="상품명, 설명, 데이터명, 태그">
+          </div>
+
+          <div>
+            <label for="status">상품 상태</label>
+            <select id="status" name="status">
+              <option value="" {% if not filters.status %}selected{% endif %}>전체</option>
+              <option value="ACTIVE" {% if filters.status == "ACTIVE" %}selected{% endif %}>ACTIVE</option>
+              <option value="INACTIVE" {% if filters.status == "INACTIVE" %}selected{% endif %}>INACTIVE</option>
+            </select>
+          </div>
+
+          <div>
+            <label for="category">카테고리</label>
+            <select id="category" name="category">
+              <option value="" {% if not filters.category %}selected{% endif %}>전체</option>
+              {% for category in ["Tabular", "Text", "Document", "IoT", "Finance", "Public", "Healthcare", "Commerce", "Research", "Other"] %}
+                <option value="{{ category }}" {% if filters.category == category %}selected{% endif %}>{{ category }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div>
+            <label for="tag">태그</label>
+            <input id="tag" name="tag" type="search" value="{{ filters.tag or '' }}" placeholder="sensor">
+          </div>
+
+          <div>
+            <label for="file_type">포맷</label>
+            <select id="file_type" name="file_type">
+              <option value="" {% if not filters.file_type %}selected{% endif %}>전체</option>
+              <option value="CSV" {% if filters.file_type == "CSV" %}selected{% endif %}>CSV</option>
+              <option value="JSON" {% if filters.file_type == "JSON" %}selected{% endif %}>JSON</option>
+              <option value="JSON_LINES" {% if filters.file_type == "JSON_LINES" %}selected{% endif %}>JSON Lines</option>
+              <option value="PLAIN_TEXT" {% if filters.file_type == "PLAIN_TEXT" %}selected{% endif %}>일반 텍스트</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="grid">
+          <div>
+            <label for="min_quality_score">최소 품질 점수</label>
+            <input id="min_quality_score" name="min_quality_score" type="number" min="0" max="100" step="1" value="{{ filters.min_quality_score if filters.min_quality_score is not none else '' }}">
+          </div>
+          <div>
+            <label for="max_pii_risk_score">최대 PII 위험 점수</label>
+            <input id="max_pii_risk_score" name="max_pii_risk_score" type="number" min="0" max="100" step="1" value="{{ filters.max_pii_risk_score if filters.max_pii_risk_score is not none else '' }}">
+          </div>
+          <div>
+            <label for="sort">정렬</label>
+            <select id="sort" name="sort">
+              <option value="newest" {% if filters.sort == "newest" %}selected{% endif %}>최신순</option>
+              <option value="quality_desc" {% if filters.sort == "quality_desc" %}selected{% endif %}>품질 높은순</option>
+              <option value="rows_desc" {% if filters.sort == "rows_desc" %}selected{% endif %}>행 많은순</option>
+              <option value="price_asc" {% if filters.sort == "price_asc" %}selected{% endif %}>가격 낮은순</option>
+              <option value="price_desc" {% if filters.sort == "price_desc" %}selected{% endif %}>가격 높은순</option>
+              <option value="title_asc" {% if filters.sort == "title_asc" %}selected{% endif %}>이름순</option>
+            </select>
+          </div>
+          <div>
+            <label for="per_page">페이지 크기</label>
+            <select id="per_page" name="per_page">
+              {% for size in [10, 20, 50] %}
+                <option value="{{ size }}" {% if filters.per_page == size %}selected{% endif %}>{{ size }}개</option>
+              {% endfor %}
+            </select>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="submit">검색</button>
+          <a class="button secondary" href="{{ url_for('web_admin_products') }}">초기화</a>
+        </div>
+      </form>
+    </section>
+
+    <h2>상품 {{ products | length }}건</h2>
+    <table>
+      <thead>
+        <tr>
+          <th>ID</th>
+          <th>상품</th>
+          <th>분류</th>
+          <th>포맷</th>
+          <th>규모</th>
+          <th>품질</th>
+          <th>PII</th>
+          <th>가격</th>
+          <th>상태</th>
+          <th>작업</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for product in products %}
+          <tr>
+            <td>{{ product.id }}</td>
+            <td>
+              <a href="{{ url_for('web_product_detail', product_id=product.id) }}">{{ product.title }}</a>
+              <div class="muted">{{ product.description or "설명 없음" }}</div>
+            </td>
+            <td>
+              {% if product.category %}<span class="tag neutral">{{ product.category }}</span>{% endif %}
+              {% if product.tags %}
+                <div class="tag-row" style="margin-top: 6px">
+                  {% for tag in product.tags.split(",")[:4] %}
+                    <span class="tag neutral">{{ tag.strip() }}</span>
+                  {% endfor %}
+                </div>
+              {% endif %}
+            </td>
+            <td>{{ product.file_type }}</td>
+            <td>{{ product.row_count }} / {{ product.column_count }}</td>
+            <td>{{ product.quality_score }}</td>
+            <td>{{ product.pii_risk_score }}</td>
+            <td>{{ product.price }}원</td>
+            <td><span class="status {{ product.status | lower }}">{{ product.status }}</span></td>
+            <td>
+              <div class="actions" style="margin-top:0">
+                <a class="button secondary" href="{{ url_for('web_edit_product', product_id=product.id) }}">수정</a>
+                {% if product.status == "ACTIVE" %}
+                  <form action="{{ url_for('web_hide_product', product_id=product.id) }}" method="post" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button class="danger" type="submit">비공개</button>
+                  </form>
+                {% else %}
+                  <form action="{{ url_for('web_publish_product', product_id=product.id) }}" method="post" style="display:inline">
+                    <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                    <button type="submit">다시 게시</button>
+                  </form>
+                {% endif %}
+              </div>
+            </td>
+          </tr>
+        {% else %}
+          <tr><td colspan="10">상품이 없습니다.</td></tr>
+        {% endfor %}
+      </tbody>
+    </table>
+
+    <section class="panel">
+      <div class="actions" style="justify-content: space-between; align-items: center; margin-top: 0">
+        <span class="muted">{{ pagination.page }} / {{ pagination.total_pages }} 페이지 · {{ pagination.total }}개 결과</span>
+        <div class="actions" style="margin-top: 0">
+          {% set prev_args = request.args.to_dict() %}
+          {% set _ = prev_args.update({"page": pagination.page - 1}) %}
+          {% set next_args = request.args.to_dict() %}
+          {% set _ = next_args.update({"page": pagination.page + 1}) %}
+          {% if pagination.has_prev %}
+            <a class="button secondary" href="{{ url_for('web_admin_products', **prev_args) }}">이전</a>
+          {% endif %}
+          {% if pagination.has_next %}
+            <a class="button secondary" href="{{ url_for('web_admin_products', **next_args) }}">다음</a>
+          {% endif %}
+        </div>
+      </div>
+    </section>
+  </div>
+{% endblock %}

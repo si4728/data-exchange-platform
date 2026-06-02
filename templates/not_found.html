@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+  <h1>요청을 처리할 수 없습니다</h1>
+  <section class="panel">
+    <p>{{ message }}</p>
+    <div class="actions">
+      <a class="button" href="{{ url_for('market') if current_user else url_for('login') }}">돌아가기</a>
+    </div>
+  </section>
+{% endblock %}
