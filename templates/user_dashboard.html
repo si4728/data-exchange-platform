@@ -22,9 +22,38 @@
       </section>
     {% endif %}
 
+    <section class="panel subtle">
+      <div class="section-header">
+        <h2>오늘 볼 일</h2>
+        <span class="muted">처리할 항목을 먼저 확인하세요</span>
+      </div>
+      <div class="quick-grid">
+        <a class="action-card" href="{{ url_for('user_dashboard') }}">
+          <span class="status {{ 'review' if notification_unread_count else 'done' }}">{{ notification_unread_count or 0 }}</span>
+          <strong>새 알림</strong>
+          <p class="muted">검토 결과와 구매 요청 변화를 확인합니다.</p>
+        </a>
+        <a class="action-card" href="{{ url_for('web_seller_purchases') }}">
+          <span class="status {{ 'requested' if seller_purchase_requests else 'done' }}">{{ seller_purchase_requests|length }}</span>
+          <strong>판매 요청</strong>
+          <p class="muted">내 상품에 들어온 구매 요청을 처리합니다.</p>
+        </a>
+        <a class="action-card" href="{{ url_for('web_buyer_orders') }}">
+          <span class="status {{ 'review' if seller_revenue.pending_amount else 'done' }}">{{ "{:,}".format(seller_revenue.pending_amount or 0) }}원</span>
+          <strong>결제 대기액</strong>
+          <p class="muted">대기 중인 주문과 결제 흐름을 점검합니다.</p>
+        </a>
+        <a class="action-card" href="{{ url_for('index') }}">
+          <span class="status active">업로드</span>
+          <strong>새 데이터 등록</strong>
+          <p class="muted">검증할 데이터 파일을 추가합니다.</p>
+        </a>
+      </div>
+    </section>
+
     <section class="panel">
-      <div class="actions" style="justify-content: space-between; align-items: center; margin-top: 0">
-        <h2 style="margin: 0">알림</h2>
+      <div class="section-header">
+        <h2>알림</h2>
         {% if notification_unread_count %}
           <form action="{{ url_for('web_mark_all_notifications_read') }}" method="post">
             <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
@@ -90,8 +119,8 @@
     </div>
 
     <section class="panel">
-      <div class="actions" style="justify-content: space-between; align-items: center; margin-top: 0">
-        <h2 style="margin: 0">판매 예상 매출</h2>
+      <div class="section-header">
+        <h2>판매 예상 매출</h2>
         <a class="button secondary" href="{{ url_for('web_seller_reports') }}">상품 운영 리포트</a>
       </div>
       <div class="grid">
@@ -106,8 +135,8 @@
     </section>
 
     <section class="panel">
-      <div class="actions" style="justify-content: space-between; align-items: center; margin-top: 0">
-        <h2 style="margin: 0">내 상품에 들어온 구매 요청</h2>
+      <div class="section-header">
+        <h2>내 상품에 들어온 구매 요청</h2>
         <a class="button secondary" href="{{ url_for('web_seller_purchases') }}">전체 보기</a>
       </div>
       <table>
@@ -255,7 +284,7 @@
                   <div class="muted">검토 메모: {{ dataset.review_note }}</div>
                 {% endif %}
                 {% if dataset.resubmission_children %}
-                  <details style="margin-bottom: 8px">
+                  <details class="mt-sm">
                     <summary>보완 제출 이력</summary>
                     <ul class="compact-list">
                       {% for child in dataset.resubmission_children %}
@@ -306,7 +335,7 @@
               <td>{{ product.license_name or "Standard Data License" }}</td>
               <td>
                 <span class="status {{ product.status | lower }}">{{ product.status }}</span>
-                <div class="actions" style="margin-top: 8px">
+                <div class="inline-actions mt-sm">
                   <a class="button secondary" href="{{ url_for('web_edit_product', product_id=product.id) }}">상품 수정</a>
                   {% if product.status == "ACTIVE" %}
                     <form action="{{ url_for('web_hide_product', product_id=product.id) }}" method="post" style="display:inline">
@@ -330,8 +359,8 @@
     </section>
 
     <section class="panel">
-      <div class="actions" style="justify-content: space-between; align-items: center; margin-top: 0">
-        <h2 style="margin: 0">내 구매 요청</h2>
+      <div class="section-header">
+        <h2>내 구매 요청</h2>
         <a class="button secondary" href="{{ url_for('web_buyer_orders') }}">주문/결제 내역</a>
       </div>
       <table>

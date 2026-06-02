@@ -130,9 +130,9 @@
       }
 
       .system-nav {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
+        display: flex;
+        flex-wrap: wrap;
+        gap: 10px;
         padding: 0 24px 14px;
       }
 
@@ -141,6 +141,7 @@
         border-radius: 8px;
         background: #fbfdff;
         padding: 10px;
+        flex: 1 1 420px;
       }
 
       .menu-title {
@@ -159,6 +160,17 @@
         flex-wrap: wrap;
         gap: 6px;
       }
+
+      .menu-disclosure {
+        flex: 0 1 330px;
+      }
+
+      .menu-disclosure summary {
+        cursor: pointer;
+        list-style: none;
+      }
+
+      .menu-disclosure summary::-webkit-details-marker { display: none; }
 
       main { padding: 32px 24px 58px; }
 
@@ -193,6 +205,48 @@
       }
 
       .panel { padding: 22px; }
+
+      .panel.subtle {
+        box-shadow: none;
+        background: #fbfdff;
+      }
+
+      .section-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+        margin-bottom: 14px;
+      }
+
+      .section-header h2 { margin: 0; }
+
+      .stack-sm { display: grid; gap: 8px; }
+      .mt-sm { margin-top: 10px; }
+      .mt-md { margin-top: 18px; }
+      .flush { margin-top: 0; }
+
+      .quick-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+        gap: 12px;
+      }
+
+      .action-card {
+        display: grid;
+        gap: 8px;
+        border: 1px solid var(--line);
+        border-radius: 8px;
+        padding: 14px;
+        background: #fff;
+      }
+
+      .action-card strong {
+        display: block;
+        font-size: 18px;
+      }
+
+      .action-card p { margin: 0; }
 
       .grid {
         display: grid;
@@ -232,6 +286,24 @@
         grid-template-columns: minmax(0, 1.4fr) 160px 160px 140px 140px auto auto;
         gap: 10px;
         align-items: end;
+      }
+
+      .filter-primary,
+      .filter-secondary {
+        display: grid;
+        gap: 10px;
+        align-items: end;
+      }
+
+      .filter-primary {
+        grid-template-columns: minmax(260px, 1fr) 170px auto auto;
+      }
+
+      .filter-secondary {
+        grid-template-columns: repeat(4, minmax(140px, 1fr));
+        margin-top: 10px;
+        padding-top: 12px;
+        border-top: 1px solid var(--line);
       }
 
       label {
@@ -295,6 +367,14 @@
         flex-wrap: wrap;
         gap: 8px;
         margin-top: 18px;
+      }
+
+      .inline-actions {
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 8px;
+        margin-top: 0;
       }
 
       table {
@@ -407,6 +487,7 @@
         padding-top: 14px;
         color: var(--muted);
         font-size: 13px;
+        justify-content: space-between;
       }
 
       .compact-list {
@@ -505,10 +586,17 @@
         }
 
         .utility-nav { justify-content: flex-start; }
-        .system-nav { grid-template-columns: 1fr; }
+        .system-nav { flex-direction: column; }
+        .menu-group { flex-basis: auto; }
         .search-row { grid-template-columns: 1fr; }
+        .filter-primary,
+        .filter-secondary { grid-template-columns: 1fr; }
         .detail-layout { grid-template-columns: 1fr; }
         .side-panel { position: static; }
+        .page-head {
+          align-items: flex-start;
+          flex-direction: column;
+        }
 
         table {
           display: block;
@@ -551,44 +639,39 @@
           <section class="menu-group">
             <div class="menu-title">
               {% if current_user.role == "ADMIN" %}
-                <span>운영 관리 시스템</span>
+                <span>운영 핵심 메뉴</span>
               {% else %}
-                <span>사용자 데이터 시스템</span>
+                <span>내 작업 메뉴</span>
               {% endif %}
             </div>
             <div class="menu-items">
               {% if current_user.role == "ADMIN" %}
                 <a class="nav-pill {% if request.path == '/web/admin' %}active{% endif %}" href="{{ url_for('web_admin_dashboard') }}">운영 대시보드</a>
-                <a class="nav-pill {% if request.path.startswith('/web/admin/operations-checklist') %}active{% endif %}" href="{{ url_for('web_admin_operations_checklist') }}">운영 점검표</a>
                 <a class="nav-pill {% if request.path.startswith('/web/admin/datasets') %}active{% endif %}" href="{{ url_for('web_admin_list_datasets') }}">데이터 검토</a>
                 <a class="nav-pill {% if request.path.startswith('/web/admin/products') %}active{% endif %}" href="{{ url_for('web_admin_products') }}">상품 관리</a>
-                <a class="nav-pill {% if request.path.startswith('/web/admin/users') %}active{% endif %}" href="{{ url_for('web_admin_users') }}">사용자 관리</a>
                 <a class="nav-pill {% if request.path.startswith('/web/admin/purchases') %}active{% endif %}" href="{{ url_for('web_admin_purchases') }}">구매 승인</a>
                 <a class="nav-pill {% if request.path.startswith('/web/admin/settlements') %}active{% endif %}" href="{{ url_for('web_admin_settlements') }}">정산 관리</a>
               {% else %}
                 <a class="nav-pill {% if request.path == '/user/dashboard' %}active{% endif %}" href="{{ url_for('user_dashboard') }}">내 대시보드</a>
                 <a class="nav-pill {% if request.path == '/' or request.path.startswith('/web/uploads') %}active{% endif %}" href="{{ url_for('index') }}">데이터 업로드</a>
-                <a class="nav-pill {% if request.path.startswith('/web/datasets') %}active{% endif %}" href="{{ url_for('user_dashboard') }}">내 데이터</a>
-                <a class="nav-pill {% if request.path.startswith('/web/products') %}active{% endif %}" href="{{ url_for('user_dashboard') }}">판매 상품</a>
                 <a class="nav-pill {% if request.path.startswith('/web/seller/reports') %}active{% endif %}" href="{{ url_for('web_seller_reports') }}">판매 리포트</a>
                 <a class="nav-pill {% if request.path.startswith('/web/seller/purchases') %}active{% endif %}" href="{{ url_for('web_seller_purchases') }}">판매 요청</a>
                 <a class="nav-pill {% if request.path.startswith('/web/orders') %}active{% endif %}" href="{{ url_for('web_buyer_orders') }}">주문/결제</a>
-                <a class="nav-pill {% if request.path.startswith('/web/purchases') %}active{% endif %}" href="{{ url_for('user_dashboard') }}">구매/API</a>
               {% endif %}
             </div>
           </section>
 
-          <section class="menu-group">
-            <div class="menu-title">
-              {% if current_user.role == "ADMIN" %}
-                <span>로그·마켓 시스템</span>
-              {% else %}
-                <span>마켓 이용 시스템</span>
-              {% endif %}
-            </div>
+          <details class="menu-group menu-disclosure">
+            {% if current_user.role == "ADMIN" %}
+              <summary class="menu-title">운영 도구 더보기</summary>
+            {% else %}
+              <summary class="menu-title">마켓·계정 도구 더보기</summary>
+            {% endif %}
             <div class="menu-items">
               <a class="nav-pill {% if request.path == '/market' %}active{% endif %}" href="{{ url_for('market') }}">데이터 마켓</a>
               {% if current_user.role == "ADMIN" %}
+                <a class="nav-pill {% if request.path.startswith('/web/admin/users') %}active{% endif %}" href="{{ url_for('web_admin_users') }}">사용자 관리</a>
+                <a class="nav-pill {% if request.path.startswith('/web/admin/operations-checklist') %}active{% endif %}" href="{{ url_for('web_admin_operations_checklist') }}">운영 점검표</a>
                 <a class="nav-pill {% if request.path.startswith('/web/admin/downloads') %}active{% endif %}" href="{{ url_for('web_admin_downloads') }}">다운로드 로그</a>
                 <a class="nav-pill {% if request.path.startswith('/web/admin/api-keys') %}active{% endif %}" href="{{ url_for('web_admin_api_keys') }}">API 키</a>
                 <a class="nav-pill {% if request.path.startswith('/web/admin/api-usage') %}active{% endif %}" href="{{ url_for('web_admin_api_usage') }}">API 로그</a>
@@ -600,7 +683,7 @@
                 <a class="nav-pill" href="{{ url_for('privacy_policy') }}">정책 확인</a>
               {% endif %}
             </div>
-          </section>
+          </details>
         </div>
       {% endif %}
     </header>
