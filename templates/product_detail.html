@@ -230,11 +230,11 @@
           {% endif %}
 
           {% if product.status == "ACTIVE" and can_download_sample %}
-            <a class="button" href="{{ url_for('product_sample', product_id=product.id) }}">샘플 다운로드</a>
+            <a class="button action-wide" href="{{ url_for('product_sample', product_id=product.id) }}">샘플 다운로드</a>
           {% elif product.status != "ACTIVE" %}
-            <span class="button secondary">비공개 상품</span>
+            <span class="button secondary action-wide">비공개 상품</span>
           {% else %}
-            <span class="button secondary">구매 승인 후 다운로드</span>
+            <span class="button secondary action-wide">구매 승인 후 다운로드</span>
           {% endif %}
         </div>
       </aside>
