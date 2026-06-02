@@ -296,15 +296,17 @@
                     </ul>
                   </details>
                 {% endif %}
-                {% if not dataset.product_id %}
-                  <a class="button" href="{{ url_for('web_edit_dataset', dataset_id=dataset.id) }}">수정</a>
-                  {% if dataset.status == "REJECTED" %}
-                    <a class="button" href="{{ url_for('web_resubmit_dataset', dataset_id=dataset.id) }}">보완 재업로드</a>
+                <div class="table-actions">
+                  {% if not dataset.product_id %}
+                    <a class="button" href="{{ url_for('web_edit_dataset', dataset_id=dataset.id) }}">수정</a>
+                    {% if dataset.status == "REJECTED" %}
+                      <a class="button" href="{{ url_for('web_resubmit_dataset', dataset_id=dataset.id) }}">보완 재업로드</a>
+                    {% endif %}
+                  {% else %}
+                    <a class="button secondary" href="{{ url_for('web_product_detail', product_id=dataset.product_id) }}">마켓 상품 보기</a>
                   {% endif %}
-                {% else %}
-                  <a class="button secondary" href="{{ url_for('web_product_detail', product_id=dataset.product_id) }}">마켓 상품 보기</a>
-                {% endif %}
-                <a class="button secondary" href="{{ url_for('web_dataset_report', dataset_id=dataset.id) }}">리포트 보기</a>
+                  <a class="button secondary" href="{{ url_for('web_dataset_report', dataset_id=dataset.id) }}">리포트 보기</a>
+                </div>
               </td>
             </tr>
           {% else %}
