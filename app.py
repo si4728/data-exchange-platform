@@ -587,7 +587,15 @@ def web_admin_database_backup():
 @app.get("/web/admin/users")
 @admin_required
 def web_admin_users():
-    return render_template("admin_users.html", users=list_users())
+    filters = _get_admin_user_filters()
+    users = list_users(**filters)
+    totals = {
+        "total": len(users),
+        "active": sum(1 for user in users if user["status"] == "ACTIVE"),
+        "suspended": sum(1 for user in users if user["status"] == "SUSPENDED"),
+        "admin": sum(1 for user in users if user["role"] == "ADMIN"),
+    }
+    return render_template("admin_users.html", users=users, filters=filters, totals=totals)
 
 
 @app.get("/web/admin/products")
@@ -658,6 +666,8 @@ def web_admin_activate_user(user_id):
 @app.post("/web/admin/users/<int:user_id>/suspend")
 @admin_required
 def web_admin_suspend_user(user_id):
+    if user_id == current_user()["id"]:
+        return render_template("not_found.html", message="본인 계정은 정지할 수 없습니다."), 400
     if update_user_status(user_id, "SUSPENDED"):
         _record_audit("USER_SUSPENDED", "USER", user_id, {"status": "SUSPENDED"})
     return redirect(url_for("web_admin_users"))
@@ -1382,6 +1392,15 @@ def _get_admin_dataset_filters():
         "max_quality_score": _parse_float_arg("max_quality_score"),
         "min_pii_risk_score": _parse_float_arg("min_pii_risk_score"),
         "max_pii_risk_score": _parse_float_arg("max_pii_risk_score"),
+    }
+
+
+def _get_admin_user_filters():
+    return {
+        "query": request.args.get("q", "").strip(),
+        "role": request.args.get("role", "").strip() or None,
+        "status": request.args.get("status", "").strip() or None,
+        "limit": _parse_int_arg("limit", default=500) or 500,
     }
 
 

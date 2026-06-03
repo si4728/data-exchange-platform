@@ -1272,15 +1272,75 @@ def get_user_by_id(user_id: int, db_path: str | Path = DATABASE_PATH) -> dict[st
     return dict(row) if row else None
 
 
-def list_users(db_path: str | Path = DATABASE_PATH) -> list[dict[str, Any]]:
+def list_users(
+    query: str = "",
+    role: str | None = None,
+    status: str | None = None,
+    limit: int = 500,
+    db_path: str | Path = DATABASE_PATH,
+) -> list[dict[str, Any]]:
     init_db(db_path)
+    limit = max(1, min(int(limit or 500), 1000))
+    clauses: list[str] = []
+    params: list[Any] = []
+    if query:
+        like = f"%{query}%"
+        clauses.append("(name LIKE ? OR email LIKE ? OR company LIKE ? OR phone LIKE ?)")
+        params.extend([like, like, like, like])
+    if role:
+        clauses.append("role = ?")
+        params.append(role)
+    if status:
+        clauses.append("status = ?")
+        params.append(status)
+
+    where_clause = f"WHERE {' AND '.join(clauses)}" if clauses else ""
     with get_connection(db_path) as connection:
         rows = connection.execute(
-            """
-            SELECT id, name, email, company, phone, role, status, created_at
+            f"""
+            SELECT
+                id,
+                name,
+                email,
+                company,
+                phone,
+                role,
+                status,
+                created_at,
+                (
+                    SELECT COUNT(*)
+                    FROM datasets
+                    WHERE datasets.seller_id = users.id
+                ) AS dataset_count,
+                (
+                    SELECT COUNT(*)
+                    FROM products
+                    JOIN datasets ON datasets.id = products.dataset_id
+                    WHERE datasets.seller_id = users.id
+                ) AS product_count,
+                (
+                    SELECT COUNT(*)
+                    FROM purchase_requests
+                    WHERE purchase_requests.buyer_id = users.id
+                ) AS purchase_request_count,
+                (
+                    SELECT MAX(created_at)
+                    FROM access_logs
+                    WHERE access_logs.user_id = users.id
+                      AND access_logs.event_type = 'LOGIN_SUCCESS'
+                ) AS last_login_at,
+                (
+                    SELECT COUNT(*)
+                    FROM access_logs
+                    WHERE access_logs.user_id = users.id
+                      AND access_logs.event_type = 'LOGIN_FAIL'
+                ) AS login_fail_count
             FROM users
+            {where_clause}
             ORDER BY id DESC
-            """
+            LIMIT ?
+            """,
+            [*params, limit],
         ).fetchall()
 
     return [dict(row) for row in rows]

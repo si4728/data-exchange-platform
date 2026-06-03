@@ -139,6 +139,12 @@ def main() -> None:
     csv_response = client.get("/web/admin/reports/orders.csv")
     if csv_response.status_code != 200:
         raise AssertionError(f"admin CSV export failed: {csv_response.status_code}")
+    self_suspend = client.post(
+        f"/web/admin/users/{admin['id']}/suspend",
+        data={"csrf_token": "security-token"},
+    )
+    if self_suspend.status_code != 400:
+        raise AssertionError(f"admin self-suspend should be rejected, got {self_suspend.status_code}")
     if csv_response.headers.get("X-Frame-Options") != "DENY":
         raise AssertionError("security headers were not applied")
     rows = list(csv.DictReader(io.StringIO(csv_response.data.decode("utf-8-sig"))))

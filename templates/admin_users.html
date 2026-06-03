@@ -1,42 +1,131 @@
 {% extends "base.html" %}
 
 {% block content %}
-  <h1>사용자 관리</h1>
-  <table>
-    <thead>
-      <tr>
-        <th>ID</th>
-        <th>이름</th>
-        <th>이메일</th>
-        <th>회사</th>
-        <th>역할</th>
-        <th>상태</th>
-        <th>작업</th>
-      </tr>
-    </thead>
-    <tbody>
-      {% for user in users %}
-        <tr>
-          <td>{{ user.id }}</td>
-          <td>{{ user.name }}</td>
-          <td>{{ user.email }}</td>
-          <td>{{ user.company }}</td>
-          <td>{{ user.role }}</td>
-          <td><span class="status {{ user.status | lower }}">{{ user.status }}</span></td>
-          <td>
-            <form action="{{ url_for('web_admin_activate_user', user_id=user.id) }}" method="post" class="inline-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button type="submit">활성화</button>
-            </form>
-            <form action="{{ url_for('web_admin_suspend_user', user_id=user.id) }}" method="post" class="inline-form">
-              <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
-              <button class="danger" type="submit">정지</button>
-            </form>
-          </td>
-        </tr>
-      {% else %}
-        <tr><td colspan="7">등록된 사용자가 없습니다.</td></tr>
-      {% endfor %}
-    </tbody>
-  </table>
+  <div class="page-shell">
+    <div class="page-head">
+      <div>
+        <div class="page-kicker">ADMIN USERS</div>
+        <h1>사용자 관리</h1>
+        <p class="muted">회원 상태, 역할, 접속 이력, 판매/구매 활동을 함께 확인합니다.</p>
+      </div>
+      <div class="tag-row">
+        <span class="tag neutral">표시 {{ totals.total }}명</span>
+      </div>
+    </div>
+
+    <div class="grid">
+      <div class="metric"><span>전체</span><strong>{{ totals.total }}</strong></div>
+      <div class="metric"><span>활성</span><strong>{{ totals.active }}</strong></div>
+      <div class="metric"><span>정지</span><strong>{{ totals.suspended }}</strong></div>
+      <div class="metric"><span>관리자</span><strong>{{ totals.admin }}</strong></div>
+    </div>
+
+    <section class="filter-panel">
+      <form action="{{ url_for('web_admin_users') }}" method="get">
+        <div class="grid">
+          <div>
+            <label for="q">검색</label>
+            <input id="q" name="q" type="search" value="{{ filters.query or '' }}" placeholder="이름, 이메일, 회사, 연락처">
+          </div>
+          <div>
+            <label for="role">역할</label>
+            <select id="role" name="role">
+              <option value="" {% if not filters.role %}selected{% endif %}>전체</option>
+              <option value="ADMIN" {% if filters.role == "ADMIN" %}selected{% endif %}>ADMIN</option>
+              <option value="USER" {% if filters.role == "USER" %}selected{% endif %}>USER</option>
+            </select>
+          </div>
+          <div>
+            <label for="status">상태</label>
+            <select id="status" name="status">
+              <option value="" {% if not filters.status %}selected{% endif %}>전체</option>
+              <option value="ACTIVE" {% if filters.status == "ACTIVE" %}selected{% endif %}>ACTIVE</option>
+              <option value="SUSPENDED" {% if filters.status == "SUSPENDED" %}selected{% endif %}>SUSPENDED</option>
+            </select>
+          </div>
+          <div>
+            <label for="limit">표시 개수</label>
+            <input id="limit" name="limit" type="number" min="1" max="1000" value="{{ filters.limit }}">
+          </div>
+        </div>
+        <div class="actions">
+          <button type="submit">검색</button>
+          <a class="button secondary" href="{{ url_for('web_admin_users') }}">초기화</a>
+          <a class="button secondary" href="{{ url_for('web_admin_access_logs') }}">접속 이력 보기</a>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <h2>사용자 목록</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>사용자</th>
+            <th>회사/연락처</th>
+            <th>권한</th>
+            <th>상태</th>
+            <th>활동</th>
+            <th>접속</th>
+            <th>작업</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for user in users %}
+            <tr>
+              <td>#{{ user.id }}</td>
+              <td>
+                <strong>{{ user.name }}</strong>
+                <div class="muted">{{ user.email }}</div>
+                <div class="muted">가입 {{ user.created_at }}</div>
+              </td>
+              <td>
+                {{ user.company or "-" }}
+                <div class="muted">{{ user.phone or "-" }}</div>
+              </td>
+              <td><span class="tag neutral">{{ user.role }}</span></td>
+              <td><span class="status {{ user.status | lower }}">{{ user.status }}</span></td>
+              <td>
+                <div class="tag-row">
+                  <span class="tag neutral">데이터 {{ user.dataset_count }}</span>
+                  <span class="tag neutral">상품 {{ user.product_count }}</span>
+                  <span class="tag neutral">구매 {{ user.purchase_request_count }}</span>
+                </div>
+              </td>
+              <td>
+                <div>{{ user.last_login_at or "로그인 이력 없음" }}</div>
+                <div class="muted">실패 {{ user.login_fail_count }}회</div>
+              </td>
+              <td>
+                <div class="table-actions">
+                  {% if user.status != "ACTIVE" %}
+                    <form action="{{ url_for('web_admin_activate_user', user_id=user.id) }}" method="post">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button type="submit">활성화</button>
+                    </form>
+                  {% else %}
+                    <span class="button secondary">활성 상태</span>
+                  {% endif %}
+
+                  {% if user.id == current_user.id %}
+                    <span class="button secondary">본인 계정</span>
+                  {% elif user.status == "SUSPENDED" %}
+                    <span class="button secondary">정지 상태</span>
+                  {% else %}
+                    <form action="{{ url_for('web_admin_suspend_user', user_id=user.id) }}" method="post">
+                      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+                      <button class="danger" type="submit">정지</button>
+                    </form>
+                  {% endif %}
+                </div>
+              </td>
+            </tr>
+          {% else %}
+            <tr><td colspan="8" class="muted">조건에 맞는 사용자가 없습니다.</td></tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </section>
+  </div>
 {% endblock %}
